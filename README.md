@@ -1,6 +1,6 @@
-# Claude Code Engineering Suite (CCES)
+# Claude Code Engineering Suite
 
-这是一个为 [Claude Code](https://code.claude.com) + [Claude Code Router](https://github.com/musistudio/claude-code-router) 的氛围编程框架设计的提示词工程系统，通过更严格的约束、模块化的技能定义和自动化的上下文注入，抑制模型的幻觉问题，将 Claude Code 转变为一个**纪律严明、基于证据、遵循开发流程**的 python 开发者。
+一个为 [Claude Code](https://code.claude.com) + [Claude Code Router](https://github.com/musistudio/claude-code-router) 的氛围编程框架设计的提示词工程系统，通过更严格的约束、模块化的技能定义和自动化的上下文注入，抑制模型的幻觉问题，将 Claude Code 转变为一个**纪律严明、基于证据、遵循开发流程**的 python 开发者。
 
 ## 🚀 核心特性
 
