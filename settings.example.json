@@ -17,9 +17,6 @@
         "hooks": [
           {
             "type": "command",
-<<<<<<< HEAD
-            "command": "python3 ~/.claude/hooks/tabu_reminder.py"
-=======
             "command": "export PYTHONIOENCODING=\"utf-8\"; python \"$CLAUDE_PROJECT_DIR/hooks/env_enforcer.py\""
           }
         ]
@@ -41,7 +38,6 @@
           {
             "type": "command",
             "command": "export PYTHONIOENCODING=\"utf-8\"; python \"$CLAUDE_PROJECT_DIR/hooks/context_manager.py\""
->>>>>>> 57e6684 (refactor: upgrade to V2.1 architecture with automated hooks and strict protocols)
           }
         ]
       }
