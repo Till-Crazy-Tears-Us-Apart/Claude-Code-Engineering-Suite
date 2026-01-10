@@ -54,6 +54,8 @@
 3.  **验证**: 重启 Claude Code，确保没有报错。
 
 ### 3. 环境要求
+*   **平台兼容性**: 本配置默认针对 **Windows + PowerShell** 环境下的 Claude Code 进行了优化（Bash 指令通常在后台通过 WSL 或 Git Bash 执行）。
+    *   **迁移提示**: 若在原生 Linux、macOS 或纯 Git Bash 环境下使用，可能需要微调 `CLAUDE.md` 或 `hooks/` 中的路径处理逻辑及 Shell 交互提示词（如 POSIX 语法的具体约束）。
 *   请确保系统 PATH 中 `python` 指向 Python 3.x。
 *   如果您的项目需要特定的环境初始化（如 source 特定的 setup 脚本），请在项目根目录下创建 `.env_setup.sh` 文件。`pre_tool_guard.py` 会优先加载该文件。否则，系统将尝试自动探测 `mamba` 或 `conda`。
 
