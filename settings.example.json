@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 C:/Users/29860/.claude/hooks/tabu_reminder.py"
+            "command": "python3 ~/.claude/hooks/tabu_reminder.py"
           }
         ]
       }
