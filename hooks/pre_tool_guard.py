@@ -29,7 +29,6 @@ READ_ONLY_TOOLS = {"Read", "Glob", "Grep", "Search", "ls", "cat", "find"}
 # 3. Always ensure PYTHONIOENCODING is UTF-8.
 
 BASH_PREAMBLE = """
-export PYTHONIOENCODING="utf-8";
 if [ -f ".env_setup.sh" ]; then
     source ".env_setup.sh";
 else
@@ -40,6 +39,13 @@ else
     fi;
 fi;
 """
+
+def is_python_related(command):
+    """Check if the command involves Python execution."""
+    # Matches common python tools and .py files
+    # Word boundaries (\b) prevent matching 'typython' or 'pyping'
+    pattern = r'\b(python3?|pip3?|pytest|uv|poetry|pdm|conda|mamba|ipython|jupyter|twine|tox)\b|\.py\b'
+    return bool(re.search(pattern, command, re.IGNORECASE))
 
 def is_absolute_path(path):
     """Check if path is absolute in a cross-platform way."""
@@ -68,9 +74,13 @@ def inject_bash_env(original_command):
     # Clean up the preamble to be a single line or minimal block
     clean_preamble = BASH_PREAMBLE.strip().replace('\n', ' ')
 
-    # Combine: Preamble + Original Command
-    # We use semicolon to separate.
-    return f"{clean_preamble} {original_command}"
+    # Conditional Injection of PYTHONIOENCODING
+    env_vars = ""
+    if is_python_related(original_command):
+        env_vars = 'export PYTHONIOENCODING="utf-8"; '
+
+    # Combine: Env Vars + Preamble + Original Command
+    return f"{env_vars}{clean_preamble} {original_command}"
 
 def main():
     sys.stdout.reconfigure(encoding='utf-8')
