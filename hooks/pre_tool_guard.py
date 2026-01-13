@@ -134,19 +134,68 @@ def main():
             sys.exit(0)
 
         # ---------------------------------------------------------
-        # Logic 1: Absolute Path Check (Interactive Permission)
+        # Logic 1: Absolute Path Check & Correction
         # ---------------------------------------------------------
         if is_absolute_path(file_path):
-            if tool_name not in READ_ONLY_TOOLS:
-                output = {
-                    "hookSpecificOutput": {
-                        "hookEventName": "PreToolUse",
-                        "permissionDecision": "ask",
-                        "permissionDecisionReason": f"⚠️ 检测到绝对路径: '{file_path}'。\n写入/修改操作建议使用相对路径以保证项目可移植性。\n是否确认执行？"
+            cwd = input_data.get("cwd", os.getcwd())
+
+            # Check if path is inside project
+            # normalize paths to avoid case mismatch issues on Windows
+            norm_file = os.path.normcase(os.path.normpath(file_path))
+            norm_cwd = os.path.normcase(os.path.normpath(cwd))
+
+            is_inside = norm_file.startswith(norm_cwd)
+
+            if is_inside:
+                # Case 1: Absolute path INSIDE project -> Auto-convert to relative
+                rel_path = os.path.relpath(file_path, cwd)
+
+                # Check READ_ONLY status again if needed, but here we just fix the path
+                # If we want to allow modification inside project without asking:
+                new_input = tool_input.copy()
+                if "file_path" in new_input:
+                    new_input["file_path"] = rel_path
+                if "path" in new_input:
+                    new_input["path"] = rel_path
+
+                # If it's a modification tool, we SILENTLY allow it because it's safe (inside project)
+                # But we still updated the path to relative for better tool behavior
+                if tool_name not in READ_ONLY_TOOLS:
+                     output = {
+                        "hookSpecificOutput": {
+                            "hookEventName": "PreToolUse",
+                            "permissionDecision": "allow",
+                            "permissionDecisionReason": f"🛡️ 路径优化：将绝对路径转换为相对路径 '{rel_path}' (项目内文件安全)",
+                            "updatedInput": new_input
+                        }
                     }
-                }
-                print(json.dumps(output))
-                sys.exit(0)
+                     print(json.dumps(output))
+                     sys.exit(0)
+                else:
+                    # Read-only tools with absolute path inside project -> also convert for consistency
+                    # or just let them pass. Let's convert to be safe/clean.
+                    output = {
+                        "hookSpecificOutput": {
+                            "hookEventName": "PreToolUse",
+                            "permissionDecision": "allow",
+                            "updatedInput": new_input
+                        }
+                    }
+                    print(json.dumps(output))
+                    sys.exit(0)
+
+            else:
+                # Case 2: Absolute path OUTSIDE project -> Block/Ask
+                if tool_name not in READ_ONLY_TOOLS:
+                    output = {
+                        "hookSpecificOutput": {
+                            "hookEventName": "PreToolUse",
+                            "permissionDecision": "ask",
+                            "permissionDecisionReason": f"⚠️ 检测到项目外绝对路径: '{file_path}'。\n工作目录: {cwd}\n为了安全，修改外部文件需确认。"
+                        }
+                    }
+                    print(json.dumps(output))
+                    sys.exit(0)
 
         # ---------------------------------------------------------
         # Logic 2: Smart Snake Case Correction
