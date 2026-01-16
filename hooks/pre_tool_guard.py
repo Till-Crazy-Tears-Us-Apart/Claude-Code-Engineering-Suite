@@ -18,7 +18,7 @@ import re
 import os
 
 # Tools that are allowed to use absolute paths (Read-only tools)
-READ_ONLY_TOOLS = {"Read", "Glob", "Grep", "Search", "ls", "cat", "find"}
+READ_ONLY_TOOLS = {"Read", "Glob", "Grep", "Search"}
 
 # Compiled regex for performance
 PYTHON_RELATED_PATTERN = re.compile(
@@ -57,8 +57,8 @@ def path_is_contained(inner_path, root_path):
     Resolves symlinks and normalizes case.
     """
     try:
-        abs_inner = os.path.abspath(inner_path)
-        abs_root = os.path.abspath(root_path)
+        abs_inner = os.path.realpath(inner_path)
+        abs_root = os.path.realpath(root_path)
         return os.path.commonpath([abs_root, abs_inner]) == abs_root
     except ValueError:
         # Can happen on Windows if paths are on different drives
