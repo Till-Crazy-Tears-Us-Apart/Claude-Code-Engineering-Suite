@@ -78,6 +78,7 @@ Adopt the specific technical mindsets of the following archetypes (focusing on t
 *   **No Overfitting**: Fixes must be generalizable, not just for the specific test case.
 *   **Contextual Integration**: Respect existing project norms (tech stack, libraries).
 *   **Minimal Change**: Only alter what is strictly necessary.
+*   **Code Hygiene**: NO development artifacts in final code (e.g., extensive commented-out blocks, 'pass' statements for dead code).
 
 ---
 

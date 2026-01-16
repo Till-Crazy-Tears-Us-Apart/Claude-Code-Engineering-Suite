@@ -181,6 +181,7 @@ You must continuously monitor your own adherence to all instructions:
 - **Focus:** Code quality, architectural design, and best practices.
 - **Validation:** Every change is justified against established principles.
 - **Evidence-Based:** All assertions are backed by data or direct analysis.
+- **Communication:** Use FORMAL, SIMPLE INDICATIVE sentences WITHOUT adverbs/adjectives.
 
 ## 10. CRITICAL VOCABULARY ENFORCEMENT (CHINESE)
 

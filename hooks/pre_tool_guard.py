@@ -110,27 +110,43 @@ def main():
             command = tool_input.get("command", "")
             new_command = inject_bash_env(command)
 
+            response = {
+                "hookSpecificOutput": {
+                    "hookEventName": "PreToolUse",
+                    "permissionDecision": "allow",
+                    # JIT Context Injection for Bash
+                    "additionalContext": "<system_reminder>Bash Constraint: Use POSIX syntax. Ensure all paths are relative.</system_reminder>"
+                }
+            }
+
             if new_command:
                 new_input = tool_input.copy()
                 new_input["command"] = new_command
+                response["hookSpecificOutput"]["updatedInput"] = new_input
+                response["hookSpecificOutput"]["permissionDecisionReason"] = f"🛡️ 环境自动修正：已注入 PYTHONIOENCODING 及 Mamba 激活脚本。\n(原: {command[:20]}...)"
+
+            print(json.dumps(response))
+            sys.exit(0)
+
+        # ---------------------------------------------------------
+        # Logic 0.5: Agent "Speed Bump" & Plan Config
+        # ---------------------------------------------------------
+        if tool_name == "Task":
+            subagent = tool_input.get("subagent_type", "")
+
+            # [NEW] Enforce Chinese language for Plan agent
+            if subagent == "Plan":
                 print(json.dumps({
                     "hookSpecificOutput": {
                         "hookEventName": "PreToolUse",
                         "permissionDecision": "allow",
-                        "permissionDecisionReason": f"🛡️ 环境自动修正：已注入 PYTHONIOENCODING 及 Mamba 激活脚本。\n(原: {command[:20]}...)",
-                        "updatedInput": new_input
+                        "additionalContext": "<system_reminder>IMPORTANT: You MUST generate the plan content in Simplified Chinese (简体中文). Do NOT use English for the plan description.</system_reminder>"
                     }
                 }))
                 sys.exit(0)
-            sys.exit(0)
 
-        # ---------------------------------------------------------
-        # Logic 0.5: Agent "Speed Bump"
-        # ---------------------------------------------------------
-        if tool_name == "Task":
-            subagent = tool_input.get("subagent_type", "")
-            # Intercept high-level agents
-            if subagent in ["Plan", "Explore", "general-purpose"]:
+            # Intercept high-level agents (Explore, general-purpose)
+            if subagent in ["Explore", "general-purpose"]:
                  print(json.dumps({
                     "hookSpecificOutput": {
                         "hookEventName": "PreToolUse",
@@ -141,11 +157,37 @@ def main():
                  sys.exit(0)
 
         # ---------------------------------------------------------
+        # Logic 0.6: Edit/Write Safety Context (Accumulator)
+        # ---------------------------------------------------------
+        additional_context_buffer = []
+
+        if tool_name in ["Edit", "Write"]:
+            path = tool_input.get("file_path", "")
+            if path:
+                # Check for lock files
+                if "lock" in path:
+                    additional_context_buffer.append("Warning: You are editing a lock file (e.g., package-lock.json). Manual edits may be overwritten.")
+
+                # Check for strict snake_case requirement (Soft reminder for Edit, Hard for Write is below)
+                if has_kebab_case(path) and tool_name == "Edit":
+                    additional_context_buffer.append("Warning: File uses kebab-case. Prefer snake_case for new files.")
+
+        # ---------------------------------------------------------
         # Path Logic
         # ---------------------------------------------------------
         file_path = tool_input.get("file_path") or tool_input.get("path")
         if not file_path:
+            # If no path, we can't do path logic.
+            # But if we have accumulated context, we should output it?
+            # Unlikely to have context without path (as context logic depends on path).
             sys.exit(0)
+
+        # Helper to attach context
+        def attach_context(response_dict):
+            if additional_context_buffer:
+                ctx_str = "<system_reminder>" + " ".join(additional_context_buffer) + "</system_reminder>"
+                response_dict["hookSpecificOutput"]["additionalContext"] = ctx_str
+            return response_dict
 
         # ---------------------------------------------------------
         # Logic 1: Absolute Path Check & Correction
@@ -158,25 +200,27 @@ def main():
                 if "file_path" in new_input: new_input["file_path"] = rel_path
                 if "path" in new_input: new_input["path"] = rel_path
 
-                print(json.dumps({
+                response = {
                     "hookSpecificOutput": {
                         "hookEventName": "PreToolUse",
                         "permissionDecision": "allow",
                         "permissionDecisionReason": f"🛡️ 路径优化：将绝对路径转换为相对路径 '{rel_path}' (项目内文件安全)",
                         "updatedInput": new_input
                     }
-                }))
+                }
+                print(json.dumps(attach_context(response)))
                 sys.exit(0)
             else:
                 # Case 2: Absolute path OUTSIDE project -> Block/Ask
                 if tool_name not in READ_ONLY_TOOLS:
-                    print(json.dumps({
+                    response = {
                         "hookSpecificOutput": {
                             "hookEventName": "PreToolUse",
                             "permissionDecision": "ask",
                             "permissionDecisionReason": f"⚠️ 检测到项目外绝对路径: '{file_path}'。\n工作目录: {cwd}\n为了安全，修改外部文件需确认。"
                         }
-                    }))
+                    }
+                    print(json.dumps(attach_context(response)))
                     sys.exit(0)
 
         # ---------------------------------------------------------
@@ -194,13 +238,14 @@ def main():
             exists_snake = os.path.exists(abs_snake)
 
             if exists_original and exists_snake:
-                print(json.dumps({
+                response = {
                     "hookSpecificOutput": {
                         "hookEventName": "PreToolUse",
                         "permissionDecision": "ask",
                         "permissionDecisionReason": f"⚠️ 命名歧义警告：同时存在 '{original_path}' 和 '{snake_path}'。\n建议使用 snake_case。"
                     }
-                }))
+                }
+                print(json.dumps(attach_context(response)))
                 sys.exit(0)
 
             elif not exists_original and exists_snake:
@@ -208,25 +253,41 @@ def main():
                 if "file_path" in new_input: new_input["file_path"] = snake_path
                 if "path" in new_input: new_input["path"] = snake_path
 
-                print(json.dumps({
+                response = {
                     "hookSpecificOutput": {
                         "hookEventName": "PreToolUse",
                         "permissionDecision": "allow",
                         "permissionDecisionReason": f"自动纠错：将 '{original_path}' 修正为存在的 '{snake_path}'",
                         "updatedInput": new_input
                     }
-                }))
+                }
+                print(json.dumps(attach_context(response)))
                 sys.exit(0)
 
             elif not exists_snake and tool_name == "Write":
-                 print(json.dumps({
+                 response = {
                     "hookSpecificOutput": {
                         "hookEventName": "PreToolUse",
                         "permissionDecision": "deny",
                         "permissionDecisionReason": f"命名规范强制：试图创建非 snake_case 文件 '{original_path}'。\n请使用 '{snake_path}' 重试。"
                     }
-                }))
+                }
+                 print(json.dumps(attach_context(response)))
                  sys.exit(0)
+
+        # ---------------------------------------------------------
+        # Final Fallthrough: If we have context but no blocks triggered
+        # ---------------------------------------------------------
+        if additional_context_buffer:
+            response = {
+                "hookSpecificOutput": {
+                    "hookEventName": "PreToolUse",
+                    "permissionDecision": "allow",
+                    # No reason needed for simple allow
+                }
+            }
+            print(json.dumps(attach_context(response)))
+            sys.exit(0)
 
         sys.exit(0)
 

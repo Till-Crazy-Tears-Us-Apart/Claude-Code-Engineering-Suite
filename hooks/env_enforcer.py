@@ -13,13 +13,11 @@ import sys
 # Using triple quotes to define the multi-line string for clarity.
 # Only injecting the critical "Environment Constraints" section to save tokens.
 REMINDER_TEXT = """<system_reminder>
-[CRITICAL ENVIRONMENT CONSTRAINTS]
-1. **Shell**: Use POSIX Bash syntax.
-2. **Environment Safety**: Python encoding and Mamba/Conda activation are handled AUTOMATICALLY by hooks. Do NOT manually inject them unless overriding.
-3. **Paths**: Use relative paths ONLY.
-4. **Behavior**: SILENT EXECUTION. No text between tool calls.
-5. **Workflow**: Read-only -> Direct Act. Modification -> Plan & MUST use AskUserQuestion -> Silent Act.
-6. **Protocol**: PROTOCOL COMMITMENT header MUST ONLY appear at the start of a SUBSTANTIVE text response.
+[CRITICAL BEHAVIORAL CONSTRAINTS]
+1. **Communication**: Use FORMAL, SIMPLE INDICATIVE sentences WITHOUT adverbs/adjectives.
+2. **Code Hygiene**: NO development artifacts in final code (e.g., extensive commented-out blocks, 'pass' statements for dead code).
+3. **Workflow**: Read-only -> Direct Act. Modification -> Plan & MUST use AskUserQuestion -> Silent Act.
+4. **Protocol**: PROTOCOL COMMITMENT header MUST ONLY appear at the start of a SUBSTANTIVE text response.
 </system_reminder>"""
 
 def main():
