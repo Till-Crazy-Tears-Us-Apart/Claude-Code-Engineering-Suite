@@ -27,7 +27,7 @@
 ├── commands/              # 自定义指令
 │   └── log-change.md      # /log-change: 生成结构化变更日志
 ├── output-styles/         # 输出风格定义
-│   └── engineer-professional.md # 工程师角色卡 (定义语气、反模式与词汇表)
+│   └── python-architect.md # 工程师角色卡 (定义语气、反模式与词汇表)
 ├── skills/                # 动态技能库 (按需加载)
 │   ├── auditor/           # 审计代理: 双盲代码审查
 │   ├── debug-protocol/    # 调试协议: Insert -> Observe -> Fix 闭环
