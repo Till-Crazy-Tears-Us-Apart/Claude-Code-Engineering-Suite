@@ -1,5 +1,6 @@
 # Secrets & Local Config
 settings.json
+settings.local.json
 *.env
 
 # System Files

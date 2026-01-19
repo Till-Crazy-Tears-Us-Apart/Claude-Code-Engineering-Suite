@@ -216,7 +216,10 @@ def inject_context(cwd):
         sys.exit(0)
 
 def main():
+    # Force UTF-8 for stdin/stdout to handle Chinese paths correctly on Windows
+    sys.stdin.reconfigure(encoding='utf-8')
     sys.stdout.reconfigure(encoding='utf-8')
+
     try:
         # Handle empty input safely
         if sys.stdin.isatty():

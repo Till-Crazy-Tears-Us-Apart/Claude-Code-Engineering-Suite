@@ -96,8 +96,16 @@ def inject_bash_env(original_command):
     return f"{env_vars}{clean_preamble} {original_command}"
 
 def main():
+    # Force UTF-8 for stdin/stdout to handle Chinese paths correctly on Windows
+    sys.stdin.reconfigure(encoding='utf-8')
     sys.stdout.reconfigure(encoding='utf-8')
+
     try:
+        # Debug: Check if input is empty
+        if sys.stdin.isatty():
+             # No input piped
+             sys.exit(0)
+
         input_data = json.load(sys.stdin)
         tool_name = input_data.get("tool_name", "")
         tool_input = input_data.get("tool_input", {})
@@ -162,6 +170,15 @@ def main():
         additional_context_buffer = []
 
         if tool_name in ["Edit", "Write"]:
+            # [NEW] Inject Strict Code Hygiene Rules
+            strict_rules = (
+                "CRITICAL CODE HYGIENE:\n"
+                "1. NO thought process/plans in comments (e.g., 'Step 1...', 'I will fix...').\n"
+                "2. NO irrelevant changes to whitespace/indentation/variables.\n"
+                "3. NO partial/toy implementations or 'TODO' placeholders for requested features."
+            )
+            additional_context_buffer.append(strict_rules)
+
             path = tool_input.get("file_path", "")
             if path:
                 # Check for lock files
