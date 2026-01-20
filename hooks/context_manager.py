@@ -202,7 +202,7 @@ def generate_snapshot(cwd):
 1.  **状态审查**: 优先检查上方“工作区状态”中的变更文件（如有）。
 2.  **上下文加载**: 必须读取 `CLAUDE.md` 以加载核心 Persona 与工程协议。
 3.  **技能意识**: 查看上方 "Available Skills" 列表，**主动 (Proactively)** 使用相关技能（如 TDD, Debugging）。
-4.  **协议强制**: 严格遵守 `Protocol Commitment` 头信息的约束（中断驱动、禁止黑话）。
+4.  **协议强制**: 严格遵守 UserPromptSubmit hook 中附加的 `system_reminder` 信息的约束（中断驱动、禁止黑话）。
 
 **[待办事项]**:
 (由此处开始，AI 应根据上文状态自动推断待办事项，或等待用户指令)
