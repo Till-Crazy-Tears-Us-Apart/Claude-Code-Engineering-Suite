@@ -55,3 +55,11 @@ Instead, ensure your Markdown tables are populated with data rigorous enough to 
 1.  **Stop & Think**: Do not generate this report if you haven't read the relevant files yet. Read them first.
 2.  **Be Harsh**: The goal is to find problems, not to validate the plan. Play the "Devil's Advocate".
 3.  **No Code Generation**: This step is pure analysis. Do not write implementation code here.
+
+## 5. Explicit Stop Protocol (MANDATORY)
+**After generating the analysis tables above, you MUST STOP.**
+1.  Do **NOT** write any code.
+2.  Do **NOT** apply any changes.
+3.  Use the `AskUserQuestion` tool to present the user with the option to proceed or revise.
+    *   Question: "Audit Complete. How should we proceed?"
+    *   Options: ["Proceed with Implementation", "Revise Plan", "Cancel"]

@@ -77,3 +77,10 @@ Instead, ensure your Markdown tables are populated with data rigorous enough to 
 - **Read-Only**: You CANNOT modify code.
 - **Skeptical**: Assume the log might be wrong or the code might be buggy.
 - **No Hallucination**: If you can't see a file, say so. Don't guess.
+
+## 6. Explicit Stop Protocol (MANDATORY)
+**After generating the analysis tables above, you MUST STOP.**
+1.  Do **NOT** propose fixes immediately.
+2.  Use the `AskUserQuestion` tool to prompt for next steps.
+    *   Question: "Audit Findings Generated. Next Step?"
+    *   Options: ["Propose Fixes", "Accept Findings & Close", "Continue Investigating"]
