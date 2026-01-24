@@ -62,18 +62,12 @@ def main():
         if event_name == "SessionStart":
             update_tree(cwd)
 
-            # Inject tree content as system prompt
-            tree_path = os.path.join(cwd, ".claude", "project_tree.md")
-            try:
-                with open(tree_path, "r", encoding="utf-8") as f:
-                    tree_content = f.read()
+            # Advice user to run /update-tree if context is stale
+            advice = "💡 提示：如果之前从未使用过 /update-tree 或刚安装 hooks，建议手动执行 /update-tree 以刷新项目结构上下文。"
 
-                print(json.dumps({
-                    "systemPrompts": [tree_content]
-                }))
-            except Exception:
-                # Fallback if file read fails
-                print(json.dumps({}))
+            print(json.dumps({
+                "systemMessage": advice
+            }))
 
             sys.exit(0)
 

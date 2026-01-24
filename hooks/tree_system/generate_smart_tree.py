@@ -263,7 +263,7 @@ class TreeGenerator:
         # 1. Create CLAUDE.md if not exists
         if not os.path.exists(claude_md_path):
             with open(claude_md_path, 'w', encoding='utf-8') as f:
-                f.write("<project_structure>\n@.claude/project_tree.md\n</project_structure>\n")
+                f.write("\n<project_structure>\n\n@.claude/project_tree.md\n\n</project_structure>\n")
             return
 
         # 2. Check if already referenced
@@ -271,7 +271,7 @@ class TreeGenerator:
             content = f.read()
 
         if "@.claude/project_tree.md" not in content and ".claude/project_tree.md" not in content:
-            new_content = content + "\n\n<project_structure>\n@.claude/project_tree.md\n</project_structure>\n"
+            new_content = content + "\n\n<project_structure>\n\n@.claude/project_tree.md\n\n</project_structure>\n"
             with open(claude_md_path, 'w', encoding='utf-8') as f:
                 f.write(new_content)
 
@@ -298,8 +298,8 @@ def main():
     print(f"Tree generated at {OUTPUT_FILE}")
 
     # Inject reference
-    # generator.inject_into_claude_md() # Disabled: Now handled dynamically by lifecycle_hook
-    # print(f"Checked {CLAUDE_MD} for reference.")
+    generator.inject_into_claude_md() # Disabled: Now handled dynamically by lifecycle_hook
+    print(f"Checked {CLAUDE_MD} for reference.")
 
 if __name__ == "__main__":
     main()
