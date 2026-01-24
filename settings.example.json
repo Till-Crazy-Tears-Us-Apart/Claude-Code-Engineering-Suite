@@ -31,7 +31,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"~/.claude/hooks/env_enforcer.py\""
+            "command": "python \"~/.claude/hooks/env_system/enforcer_hook.py\""
           }
         ]
       }
@@ -42,6 +42,10 @@
           {
             "type": "command",
             "command": "python \"~/.claude/hooks/context_manager.py\""
+          },
+          {
+            "type": "command",
+            "command": "python \"~/.claude/hooks/tree_system/lifecycle_hook.py\""
           }
         ]
       }
@@ -52,6 +56,10 @@
           {
             "type": "command",
             "command": "python \"~/.claude/hooks/context_manager.py\""
+          },
+          {
+            "type": "command",
+            "command": "python \"~/.claude/hooks/tree_system/lifecycle_hook.py\""
           }
         ]
       }

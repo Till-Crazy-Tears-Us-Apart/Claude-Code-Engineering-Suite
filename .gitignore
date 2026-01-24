@@ -18,7 +18,8 @@ __pycache__/
 # Editor Directories
 .idea/
 .vscode/
-
 temp_log/
 .compact_args.md
 .settings.json
+.ideas/
+.claude/

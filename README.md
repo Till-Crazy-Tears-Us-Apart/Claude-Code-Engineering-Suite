@@ -58,7 +58,8 @@
 ├── style.md                        # 统一协议层 (定义 "Can/Cannot" 边界与 Agent 限制)
 ├── settings.example.json           # 配置文件模板 (含 Hooks 配置)
 ├── commands/                       # 自定义指令
-│   └── log-change.md               # /log-change: 生成结构化变更日志
+│   ├── log-change.md               # /log-change: 生成结构化变更日志
+│   └── update-tree.md              # /update-tree: 手动更新项目树
 ├── output-styles/                  # 输出风格定义
 │   └── python-architect.md         # 工程师角色卡 (定义语气、反模式与词汇表)
 ├── skills/                         # 动态技能库 (按需加载)
@@ -73,7 +74,12 @@
 │   └── writing-skills/             # 技能编写: 技能即代码
 └── hooks/                          # 自动化脚本
     ├── context_manager.py          # 上下文快照与恢复
-    ├── env_enforcer.py             # 环境约束注入
+    ├── env_system/
+    │   ├── enforcer_hook.py        # 环境约束注入 (原 env_enforcer.py)
+    │   └── reminder_prompt.md      # 约束提示词
+    ├── tree_system/
+    │   ├── generate_smart_tree.py  # 项目树生成器
+    │   └── lifecycle_hook.py       # 自动更新钩子
     └── pre_tool_guard.py           # 路径/环境 前置拦截器
 ```
 
