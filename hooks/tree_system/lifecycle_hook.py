@@ -13,13 +13,15 @@ import json
 import os
 import subprocess
 
-GENERATOR_SCRIPT = os.path.join("hooks", "tree_system", "generate_smart_tree.py")
+GENERATOR_SCRIPT = "generate_smart_tree.py"
 
 def update_tree(cwd):
     """
     Executes the tree generation script.
     """
-    script_path = os.path.join(cwd, GENERATOR_SCRIPT)
+    # Resolve script path relative to this hook file, not CWD
+    hook_dir = os.path.dirname(os.path.abspath(__file__))
+    script_path = os.path.join(hook_dir, GENERATOR_SCRIPT)
 
     if not os.path.exists(script_path):
         # Fail silently if script is missing to avoid blocking the session

@@ -69,7 +69,7 @@ Output your analysis in the following two markdown tables.
 
 ## 4. Strict Schema Compliance (Implicit)
 
-You MUST read `skills/auditor/output_schema.json` to understand the required verification depth.
+You MUST read `~/.claude/skills/auditor/output_schema.json` to understand the required verification depth.
 **Do NOT output the JSON block.**
 Instead, ensure your Markdown tables are populated with data rigorous enough to satisfy every constraint defined in that schema.
 
@@ -79,7 +79,8 @@ Instead, ensure your Markdown tables are populated with data rigorous enough to 
 - **No Hallucination**: If you can't see a file, say so. Don't guess.
 
 ## 6. Explicit Stop Protocol (MANDATORY)
-**After generating the analysis tables above, you MUST STOP.**
+**CRITICAL**: You MUST generate ALL tables and analysis text in your response BEFORE calling any tool. The `AskUserQuestion` tool call MUST be the absolute LAST action in your turn.
+
 1.  Do **NOT** propose fixes immediately.
 2.  Use the `AskUserQuestion` tool to prompt for next steps.
     *   Question: "Audit Findings Generated. Next Step?"

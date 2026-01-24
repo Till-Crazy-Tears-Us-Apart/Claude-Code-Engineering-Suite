@@ -47,7 +47,7 @@ After scanning, output your analysis in the following two markdown tables.
 
 ## 3. Strict Schema Compliance (Implicit)
 
-You MUST read `skills/deep-plan/output_schema.json` to understand the required verification depth.
+You MUST read `~/.claude/skills/deep-plan/output_schema.json` to understand the required verification depth.
 **Do NOT output the JSON block.**
 Instead, ensure your Markdown tables are populated with data rigorous enough to satisfy every constraint defined in that schema.
 
@@ -57,7 +57,8 @@ Instead, ensure your Markdown tables are populated with data rigorous enough to 
 3.  **No Code Generation**: This step is pure analysis. Do not write implementation code here.
 
 ## 5. Explicit Stop Protocol (MANDATORY)
-**After generating the analysis tables above, you MUST STOP.**
+**CRITICAL**: You MUST generate ALL tables and analysis text in your response BEFORE calling any tool. The `AskUserQuestion` tool call MUST be the absolute LAST action in your turn.
+
 1.  Do **NOT** write any code.
 2.  Do **NOT** apply any changes.
 3.  Use the `AskUserQuestion` tool to present the user with the option to proceed or revise.

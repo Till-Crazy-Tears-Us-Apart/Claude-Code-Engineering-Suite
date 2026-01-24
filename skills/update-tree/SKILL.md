@@ -18,5 +18,5 @@ This is useful if you created many files and want Claude to "see" them immediate
 2. Confirm success.
 
 ```bash
-python hooks/tree_system/generate_smart_tree.py
+python -c "import os, subprocess, sys; script = os.path.expanduser('~/.claude/hooks/tree_system/generate_smart_tree.py'); subprocess.run([sys.executable, script], check=True)"
 ```

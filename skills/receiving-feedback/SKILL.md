@@ -165,6 +165,7 @@ If you pushed back and were wrong:
 State the correction factually and move on.
 
 ## Explicit Stop Protocol (MANDATORY)
+**CRITICAL**: You MUST provide your technical evaluation and verification results in your response BEFORE calling any tool. The `AskUserQuestion` tool call MUST be the absolute LAST action in your turn.
 
 **BEFORE implementing any changes based on feedback:**
 1.  Verify the feedback against the codebase.
