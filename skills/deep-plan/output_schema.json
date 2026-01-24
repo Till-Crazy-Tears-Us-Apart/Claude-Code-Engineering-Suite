@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Deep Plan Audit Output",
+  "type": "object",
+  "required": ["physical_changes", "logic_audit"],
+  "properties": {
+    "physical_changes": {
+      "type": "array",
+      "description": "物理变更预演表",
+      "items": {
+        "type": "object",
+        "required": ["file_path", "location", "action", "summary", "minimalist_check", "ripple_effect"],
+        "properties": {
+          "file_path": { "type": "string", "description": "文件路径" },
+          "location": { "type": "string", "description": "具体函数/行号" },
+          "action": { "type": "string", "enum": ["Create", "Modify", "Delete"], "description": "操作类型" },
+          "summary": { "type": "string", "description": "修改目的与内容简述" },
+          "minimalist_check": { "type": "string", "description": "最小化验证 (是否触碰无关代码)" },
+          "ripple_effect": { "type": "string", "description": "涟漪效应 (对周边代码的影响)" }
+        }
+      }
+    },
+    "logic_audit": {
+      "type": "array",
+      "description": "逻辑与契约审计表：涵盖数据流、一致性、结构、风险等维度的检查",
+      "items": {
+        "type": "object",
+        "required": ["dimension", "check_item", "status", "contract"],
+        "properties": {
+          "dimension": {
+            "type": "string",
+            "enum": [
+              "数据流 (Data Flow)",
+              "一致性 (Consistency)",
+              "数据结构 (Data Structure)",
+              "系统风险 (System Risk)",
+              "复杂度 (Complexity)",
+              "并发与锁 (Concurrency)",
+              "零决策 (Zero-Decision)",
+              "验证契约 (Verification)"
+            ]
+          },
+          "check_item": { "type": "string", "description": "具体的检查子项 (如: 上游参数、库函数签名、硬编码)" },
+          "status": { "type": "string", "enum": ["Pass", "Warn", "Fail", "Locked", "Def"], "description": "审查状态" },
+          "contract": { "type": "string", "description": "决策结论、规约或整改措施" }
+        }
+      }
+    }
+  }
+}

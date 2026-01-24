@@ -60,12 +60,7 @@ def main():
         if event_name in ["SessionStart", "PreCompact"]:
             update_tree(cwd)
 
-            print(json.dumps({
-                "hookSpecificOutput": {
-                    "hookEventName": event_name,
-                    "result": "success"
-                }
-            }))
+            print(json.dumps({}))
             sys.exit(0)
 
         # Fallback for unhandled events

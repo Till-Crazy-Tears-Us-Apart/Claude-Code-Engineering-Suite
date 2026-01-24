@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Auditor Output Schema",
+  "type": "object",
+  "required": ["intent_verification", "defensive_audit"],
+  "properties": {
+    "intent_verification": {
+      "type": "array",
+      "description": "意图与实现对照表：交叉验证 初始计划、ChangeLog、实际代码",
+      "items": {
+        "type": "object",
+        "required": ["dimension", "initial_plan", "log_claim", "actual_code", "location", "verdict"],
+        "properties": {
+          "dimension": { "type": "string", "description": "检查维度 (如: 数据流, API一致性)" },
+          "initial_plan": { "type": "string", "description": "初始计划中的意图" },
+          "log_claim": { "type": "string", "description": "ChangeLog 中的记录" },
+          "actual_code": { "type": "string", "description": "代码实际实现情况" },
+          "location": { "type": "string", "description": "文件路径:行号" },
+          "verdict": { "type": "string", "enum": ["Match", "Discrepancy", "SilentChange", "Missing"], "description": "判定结果" }
+        }
+      }
+    },
+    "defensive_audit": {
+      "type": "array",
+      "description": "防御性审计表：基于清单的质量与风险检查",
+      "items": {
+        "type": "object",
+        "required": ["category", "status", "evidence", "location"],
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": ["Side Effects", "Ripple Effects", "Data Structure", "Performance", "Security", "Testing Strategy"]
+          },
+          "status": { "type": "string", "enum": ["Pass", "Warn", "Fail"], "description": "审计状态" },
+          "evidence": { "type": "string", "description": "具体的证据描述" },
+          "location": { "type": "string", "description": "相关文件路径:行号" }
+        }
+      }
+    }
+  }
+}
