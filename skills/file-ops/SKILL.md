@@ -1,6 +1,7 @@
 ---
 name: file-ops
 description: Use this skill for any file system operations, including reading, writing, editing, moving, or deleting files. Enforces strict safety protocols.
+user-invocable: false
 ---
 
 # File Operation Protocols

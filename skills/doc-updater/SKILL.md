@@ -1,5 +1,7 @@
 ---
+name: doc-updater
 description: Update core documentation based on code changes referenced in CLAUDE.md
+allowed-tools: Read, Edit, Write, Glob, Grep, Bash
 ---
 
 # Document Updater Protocol

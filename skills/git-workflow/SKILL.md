@@ -1,6 +1,8 @@
 ---
 name: git-workflow
 description: Use this skill for all version control tasks, including committing, branching, pushing, and reviewing history.
+allowed-tools: Read, Grep, Glob, Bash
+user-invocable: false
 ---
 
 # Git Workflow & Safety Protocols

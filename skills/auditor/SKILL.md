@@ -1,6 +1,6 @@
 ---
 name: auditor
-description: Independent code auditor. Verifies code against a change log without prior context.
+description: Independent code auditor performing triangulation verification (Intent/Log/Code) without prior context.
 allowed-tools: Read, Grep, Glob, Bash
 argument-hint: "[log_file_path] [git_diff_range (optional)]"
 disable-model-invocation: true

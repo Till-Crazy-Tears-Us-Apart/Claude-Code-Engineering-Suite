@@ -1,6 +1,8 @@
 ---
 name: code-modification
 description: Use this skill when modifying, refactoring, or optimizing code. Enforces strict engineering standards and project-specific constraints.
+allowed-tools: Read, Edit, Write, Grep, Glob, Bash
+disable-model-invocation: true
 ---
 
 # Code Modification Standards
