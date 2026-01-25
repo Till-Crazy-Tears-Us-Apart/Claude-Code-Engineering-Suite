@@ -63,7 +63,10 @@ def main():
             update_tree(cwd)
 
             # Advice user to run /update-tree if context is stale
-            advice = "💡 提示：如果之前从未使用过 /update-tree 或刚安装 hooks，建议手动执行 /update-tree 以刷新项目结构上下文。"
+            advice = (
+                "\n💡 提示：如果之前从未使用过 /update-tree 或刚安装 hooks，建议手动执行 /update-tree 以刷新项目结构上下文。\n"
+                "🛡️ 建议：请将 .claude/ 加入 .gitignore 以避免提交自动生成的元数据。"
+            )
 
             print(json.dumps({
                 "systemMessage": advice

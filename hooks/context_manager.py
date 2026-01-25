@@ -15,7 +15,7 @@ import os
 import subprocess
 from datetime import datetime
 
-SNAPSHOT_FILE = ".compact_args.md"
+SNAPSHOT_FILE = os.path.join(".claude", "context_snapshot.md")
 MAX_STATUS_LINES = 50  # Limit git status output to avoid memory issues
 
 def get_git_env():
@@ -30,6 +30,8 @@ def generate_snapshot(cwd):
     Optimized for Windows performance and large repo safety.
     """
     try:
+        # Ensure .claude directory exists
+        os.makedirs(os.path.join(cwd, ".claude"), exist_ok=True)
         # 1. Capture Git Info
         branch = "Unknown"
         last_commit = "Unknown"

@@ -63,7 +63,7 @@ class TreeGenerator:
 
         if not os.path.exists(config_path):
             # Default configuration if file is still missing
-            self.exclusions = [".git", "node_modules", "__pycache__", ".claude_code"]
+            self.exclusions = [".git", "node_modules", "__pycache__", ".claude_code", ".claude"]
             self.inclusions = {".": {"depth": DEFAULT_DEPTH, "if_file": True}}
             return
 

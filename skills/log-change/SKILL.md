@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 # Change Log Generation Protocol
 
-You must generate a change log file at `temp_log/_temp_${ARGUMENTS}_[timestamp].md`.
+You must generate a change log file at `.claude/temp_log/_temp_${ARGUMENTS}_[timestamp].md`.
 
 ## 1. Input Analysis
 - **Task ID**: $1
@@ -59,4 +59,4 @@ The output file MUST strictly follow this markdown structure:
 ## 3. Execution Rule
 - **No Adjectives**: Use "Implemented X", not "Successfully implemented X".
 - **No Innocence Presumption**: Document risks even if tests passed.
-- **Write File**: Use `Write` tool to save the file. Ensure the directory `temp_log` exists.
+- **Write File**: Use `Write` tool to save the file. Ensure the directory `.claude/temp_log` exists.
