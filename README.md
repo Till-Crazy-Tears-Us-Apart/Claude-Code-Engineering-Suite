@@ -58,7 +58,7 @@
     *   **持久化**: 通过 `/milestone` 命令生成结构化历史报告，并更新 `.claude/history/timeline.md` 索引。
     *   **渐进披露**: `CLAUDE.md` 仅引用 Timeline 索引，AI 根据需要按需读取具体的历史报告，从而在保持长期记忆的同时节省 Token 上下文。
 
-### 5. 核心开发工作流
+### 5. 开发工作流
 本项目定义了严格的 "Plan-Act-Verify" 闭环，以下 Skills 或 Commands 需由用户**主动调用**：
 
 1.  **架构预审 (`/deep-plan`)**
@@ -83,7 +83,7 @@
 
 4.  **上下文回退（`/rewind`）**
     *   **阶段**: 生成标准化变更日志后。
-    *   **操作**：使用 /rewind 命令将对话上下文回退（Restore conversation only）到计划审计完成后、修改执行前的检查点。
+    *   **操作**：使用 Claude Code 内置的 /rewind 命令将对话上下文回退（Restore conversation only）到计划审计完成后、修改执行前的检查点。
     *   **功能**：确保 AI 不持对修改过程的记忆，从而避免在后续交互中引入偏见或误导，保持独立性。
 
 5.  **三方审计 (`/auditor`)**
@@ -107,12 +107,10 @@
 │   └── python-architect.md         # 工程师角色卡 (定义语气、反模式与词汇表)
 ├── skills/                         # 动态技能库 (按需加载)
 │   ├── deep-plan/                  # 深度计划: 架构预审协议
-│   ├── milestone/                  # 里程碑: 历史记录与阶段性总结
-│   │   ├── generate_draft.py       # 草稿生成脚本
-│   │   └── report_schema.json      # 报告内容规范
 │   ├── code-modification/          # 代码修改: 工程化改动协议
 │   ├── log-change/                 # 日志固化: 变更记录生成
 │   ├── auditor/                    # 审计代理: 三方一致性校验
+│   ├── milestone/                  # 里程碑: 历史记录与阶段性总结
 │   ├── update-tree/                # 树更新: 手动刷新快照 (Proactive 模式)
 │   └── ...                         # 其他工程化技能 (TDD, Debugging, FileOps 等)
 └── hooks/                          # 自动化钩子系统

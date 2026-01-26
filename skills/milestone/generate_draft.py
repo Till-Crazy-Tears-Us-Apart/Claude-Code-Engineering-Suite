@@ -63,49 +63,27 @@ def main():
     report_path = os.path.join(REPORTS_DIR, report_filename)
 
     # 1. Generate Report Template
-    report_content = f"""# Milestone: {summary_text}
-> Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | ID: {timestamp}
+    template_path = os.path.join(os.path.dirname(__file__), "report_template.md")
+    if os.path.exists(template_path):
+        with open(template_path, "r", encoding="utf-8") as f:
+            template_content = f.read()
+    else:
+        # Fallback if template missing (should not happen in normal flow)
+        template_content = """# Milestone: {summary_text}
+> Date: {date_time} | ID: {timestamp}
 
 ## 1. Summary
-[AI TODO: 简要总结本阶段的工作内容 (1-3句) - 必须使用简体中文]
+[AI TODO: Summary missing]
 
-## 2. Technical Decisions & Ambiguity Resolution
-[AI TODO: 列出关键技术决策 - 必须使用简体中文]
-- **Decision**: ... | **Reason**: ...
-
-## 3. Implementation Details
-[AI TODO: 请针对每个修改的文件，详细填写以下内容]
-
-### 3.1 [File Path]
-- **Modification Summary**: [Change description]
-- **Reason**: [Why necessary]
-- **Role in Data Flow**: [Input -> Processing -> Output]
-- **Ripple Effects**: [Upstream/Downstream impact]
-- **Code Logic**: [Specific logic explanation]
-
-[Git Summary for Reference]
-{get_recent_summary()}
-
-## 4. Systemic Impact Analysis
-- **Data Flow**: TBD
-- **Interface Consistency**: TBD
-- **Hardcoding Status**: TBD
-- **System Risks**: TBD
-- **Complexity (Time/Space)**: TBD
-- **Concurrency/Locks**: TBD
-
-## 5. Experiments & Debugging
-[AI TODO: 记录测试结果、调试日志或 Bug 根因 - 必须使用简体中文]
-- N/A
-
-## 6. Invariants & PBT Spec
-[AI TODO: 如果有 PBT 属性，请在此记录 - 必须使用简体中文]
-- N/A
-
-## 7. Technical Debt & Future Plan
-[AI TODO: 遗留问题或下一步计划 - 必须使用简体中文]
-- TBD
+## Implementation Details
+{git_summary}
 """
+
+    report_content = template_content.replace("{summary_text}", summary_text) \
+                                     .replace("{date_time}", datetime.now().strftime('%Y-%m-%d %H:%M:%S')) \
+                                     .replace("{timestamp}", timestamp) \
+                                     .replace("{git_summary}", get_recent_summary())
+
     with open(report_path, "w", encoding="utf-8") as f:
         f.write(report_content)
 

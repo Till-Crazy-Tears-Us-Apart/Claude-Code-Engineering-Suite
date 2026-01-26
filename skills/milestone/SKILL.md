@@ -35,6 +35,14 @@ Before generating any files, you MUST perform a deep audit of the work done.
     *   **Language Mandate**: All content MUST be in **Simplified Chinese (简体中文)**.
 3.  **Validation**: Verify the file is saved and the content matches the schema.
 
+## Content Standards (Strict)
+You MUST adhere to the following 4 rules when writing the report:
+
+1.  **Completeness (No Token Saving)**: DO NOT summarize, compress, or omit technical details to save space/tokens. You MUST preserve the FULL technical context, reasoning, and trade-offs.
+2.  **Negative Knowledge (Falsification)**: You MUST document *refuted* hypotheses and *failed* attempts. Explaining "why approach X failed" is as critical as "how approach Y succeeded".
+3.  **Style (Objective)**: Use formal, simple indicative sentences (`Subject` + `Verb` + `Object`). STRICTLY PROHIBIT unnecessary `Adjectives`, `Adverbs`, and `Metaphors` (e.g., "elegant solution", "quick fix").
+4.  **Epistemic Humility**: DO NOT declare "Fixed" or "Solved" without empirical data (logs/tests). Use "Implemented" or "Attempted" for unverified changes. Do not predict future success.
+
 ## Core Pattern: The Milestone Report
 A milestone consists of two parts:
 1.  **Index (Timeline)**: A high-level reverse-chronological list in `.claude/history/timeline.md`.

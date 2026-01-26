@@ -9,6 +9,7 @@ disable-model-invocation: true
 # Change Log Generation Protocol
 
 You must generate a change log file at `.claude/temp_log/_temp_${ARGUMENTS}_[timestamp].md`.
+All content MUST be in **Simplified Chinese (简体中文)**.
 
 ## 1. Input Analysis
 - **Task ID**: $1
@@ -56,7 +57,19 @@ The output file MUST strictly follow this markdown structure:
 - [ ] Manual Check: [List checks]
 ```
 
-## 3. Execution Rule
+## 3. Content Standards (Strict)
+You MUST adhere to the following 4 rules when writing the log:
+
+1.  **Completeness (No Token Saving)**: DO NOT summarize, compress, or omit technical details to save space/tokens. You MUST preserve the FULL technical context.
+2.  **Negative Knowledge (Falsification)**: You MUST document *refuted* hypotheses and *failed* attempts. Explaining "why approach X failed" is as critical as "how approach Y succeeded".
+3.  **Style (Objective)**: Use formal, simple indicative sentences (`Subject` + `Verb` + `Object`). STRICTLY PROHIBIT unnecessary `Adjectives`, `Adverbs`, and `Metaphors`.
+4.  **Epistemic Humility**: DO NOT declare "Fixed" or "Solved" without empirical data (logs/tests). Use "Implemented" or "Attempted" for unverified changes.
+
+## 4. Execution Rule
 - **No Adjectives**: Use "Implemented X", not "Successfully implemented X".
 - **No Innocence Presumption**: Document risks even if tests passed.
 - **Write File**: Use `Write` tool to save the file. Ensure the directory `.claude/temp_log` exists.
+
+## 5. Strict Schema Compliance (Implicit)
+You MUST read `~/.claude/skills/log-change/output_schema.json` to understand the required verification depth.
+**Do NOT output the JSON block.** Populate the Markdown structure to satisfy the schema's rigor.
