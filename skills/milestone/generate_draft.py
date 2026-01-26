@@ -109,23 +109,66 @@ def main():
     with open(report_path, "w", encoding="utf-8") as f:
         f.write(report_content)
 
-    # 2. Update Timeline (Prepending)
+    # 2. Update Timeline (Prepending to Table)
     with open(TIMELINE_FILE, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
-    header = lines[:4]
-    rest = lines[4:]
-
-    # Use forward slashes for markdown links
-    link_path = os.path.join(REPORTS_DIR, report_filename).replace(os.sep, '/')
-
-    new_entry = [
-        f"### **[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]** - {summary_text}\n",
-        f"- **关联报告**: `{link_path}`\n\n"
+    # Define table header
+    table_header = [
+        "| 日期 (Date) | 里程碑 (Milestone) | 报告链接 (Report Link) | 简述 (Summary) |\n",
+        "| :--- | :--- | :--- | :--- |\n"
     ]
 
+    # Find where the table starts or create it
+    header_end_idx = 0
+    has_table = False
+
+    # Simple heuristic to find existing table
+    for i, line in enumerate(lines):
+        if "| :--- |" in line:
+            header_end_idx = i + 1
+            has_table = True
+            break
+
+    if not has_table:
+
+        try:
+            sep_idx = lines.index("---\n") + 1
+        except ValueError:
+            sep_idx = len(lines)
+
+        preamble = lines[:sep_idx]
+        existing_content = lines[sep_idx:] 
+
+        # New structure: Preamble -> Table Header -> New Row -> Old Content (if any, ideally empty or converted)
+        final_lines = preamble + table_header
+        insert_pos = len(final_lines)
+    else:
+        # We have a table, insert after the header
+        preamble = lines[:header_end_idx]
+        rest = lines[header_end_idx:]
+        final_lines = preamble
+        insert_pos = len(preamble)
+
+    rel_link_path = f"reports/{report_filename}"
+
+    date_str = datetime.now().strftime('%Y-%m-%d')
+    milestone_id = f"M_{timestamp}"
+
+    # Format: | Date | Milestone | Link | Summary |
+    new_row = f"| {date_str} | {milestone_id} | [📄 View Report]({rel_link_path}) | {summary_text} |\n"
+
+    if has_table:
+        final_lines.extend([new_row] + rest)
+    else:
+        final_lines.append(new_row)
+
+        if not has_table and existing_content:
+             final_lines.append("\n<!-- Old History (Pre-Table Format) -->\n")
+             final_lines.extend(existing_content)
+
     with open(TIMELINE_FILE, "w", encoding="utf-8") as f:
-        f.writelines(header + new_entry + rest)
+        f.writelines(final_lines)
 
     # Call centralized injector
     try:
