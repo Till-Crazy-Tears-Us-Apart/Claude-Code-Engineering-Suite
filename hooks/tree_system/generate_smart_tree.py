@@ -256,25 +256,6 @@ class TreeGenerator:
                 if next_depth != 0:
                      self._recursive_build(full_path, new_prefix, next_depth, next_if_file)
 
-    def inject_into_claude_md(self):
-        """Injects reference into CLAUDE.md if missing."""
-        claude_md_path = os.path.join(self.root_dir, CLAUDE_MD)
-
-        # 1. Create CLAUDE.md if not exists
-        if not os.path.exists(claude_md_path):
-            with open(claude_md_path, 'w', encoding='utf-8') as f:
-                f.write("\n<project_structure>\n\n@.claude/project_tree.md\n\n</project_structure>\n")
-            return
-
-        # 2. Check if already referenced
-        with open(claude_md_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-
-        if "@.claude/project_tree.md" not in content and ".claude/project_tree.md" not in content:
-            new_content = content + "\n\n<project_structure>\n\n@.claude/project_tree.md\n\n</project_structure>\n"
-            with open(claude_md_path, 'w', encoding='utf-8') as f:
-                f.write(new_content)
-
 def main():
     # Ensure UTF-8 output
     try:
@@ -297,9 +278,21 @@ def main():
 
     print(f"Tree generated at {OUTPUT_FILE}")
 
-    # Inject reference
-    generator.inject_into_claude_md() # Disabled: Now handled dynamically by lifecycle_hook
-    print(f"Checked {CLAUDE_MD} for reference.")
+    # Call centralized injector
+    try:
+        # Resolve injector relative to this script: ../doc_manager/injector.py
+        # Current script is in hooks/tree_system/
+        current_script_dir = os.path.dirname(os.path.abspath(__file__))
+        injector_path = os.path.abspath(os.path.join(current_script_dir, "../doc_manager/injector.py"))
+
+        if os.path.exists(injector_path):
+            # Using sys.executable to ensure same python env
+            import subprocess
+            subprocess.run([sys.executable, injector_path], cwd=root_dir, check=False)
+        else:
+            print(f"Warning: Injector not found at {injector_path}")
+    except Exception as e:
+        print(f"Warning: Failed to run injector: {e}")
 
 if __name__ == "__main__":
     main()

@@ -49,27 +49,6 @@ def get_recent_summary():
     except:
         return "Manual milestone"
 
-def update_claude_md():
-    """Ensures timeline.md is referenced in CLAUDE.md."""
-    if not os.path.exists(CLAUDE_MD):
-        return
-
-    with open(CLAUDE_MD, "r", encoding="utf-8") as f:
-        content = f.read()
-
-    reference = "@.claude/history/timeline.md"
-    if reference not in content:
-        if "<project_structure>" in content:
-            new_content = content.replace(
-                "<project_structure>",
-                f"<project_structure>\n\n{reference}"
-            )
-        else:
-            new_content = content + f"\n\n<project_structure>\n\n{reference}\n\n</project_structure>\n"
-
-        with open(CLAUDE_MD, "w", encoding="utf-8") as f:
-            f.write(new_content)
-
 def main():
     # Force UTF-8
     sys.stdout.reconfigure(encoding='utf-8')
@@ -148,7 +127,18 @@ def main():
     with open(TIMELINE_FILE, "w", encoding="utf-8") as f:
         f.writelines(header + new_entry + rest)
 
-    update_claude_md()
+    # Call centralized injector
+    try:
+        # Resolve injector relative to this script: ../../hooks/doc_manager/injector.py
+        current_script_dir = os.path.dirname(os.path.abspath(__file__))
+        injector_path = os.path.abspath(os.path.join(current_script_dir, "../../hooks/doc_manager/injector.py"))
+
+        if os.path.exists(injector_path):
+            subprocess.run([sys.executable, injector_path], cwd=cwd, check=False)
+        else:
+            print(f"Warning: Injector not found at {injector_path}")
+    except Exception as e:
+        print(f"Warning: Failed to run injector: {e}")
 
     print(f"Draft generated: {report_path}")
     print(f"Timeline updated: {TIMELINE_FILE}")
