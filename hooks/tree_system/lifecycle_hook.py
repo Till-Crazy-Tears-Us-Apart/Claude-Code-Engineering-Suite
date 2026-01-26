@@ -5,7 +5,7 @@
 @Description : Automated project tree updater for SessionStart and PreCompact events.
                Ensures .claude/project_tree.md is fresh BEFORE the system prompts are assembled.
 @Author      : Till-Crazy-Tears-Us-Apart
-@CreationDate: 2026-01-24
+@CreationDate: 2026-01-26
 """
 
 import sys
@@ -65,7 +65,7 @@ def main():
             # Advice user to run /update-tree if context is stale
             advice = (
                 "\n💡 提示：如果之前从未使用过 /update-tree 或刚安装 hooks，建议手动执行 /update-tree 以刷新项目结构上下文。\n"
-                "🛡️ 建议：请将 .claude/ 加入 .gitignore 以避免提交自动生成的元数据。"
+                "🛡️ 建议：请将 .claude/ 加入 .gitignore 以避免提交自动生成的元数据；执行/compact 前使用 /milestone 以固化历史记录。"
             )
 
             print(json.dumps({

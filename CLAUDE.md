@@ -44,4 +44,3 @@ CORE SKILLS MANIFEST (Explicitly Listed for Awareness)
 Whenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.
 
 </system-reminder>
-
