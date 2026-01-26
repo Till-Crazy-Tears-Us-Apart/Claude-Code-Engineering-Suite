@@ -36,7 +36,14 @@
 ### 2. 动态文件树
 *   **自动维护**: 基于 `hooks/tree_system/` 自动维护 `.claude/project_tree.md` 快照。
 *   **生命周期集成**: 在会话启动 (`SessionStart`) 和压缩前 (`PreCompact`) 自动更新，确保 AI 掌握最新结构。
-*   **按需精简**: 支持通过 `.claude/tree_config` 控制目录深度和文件可见性。
+*   **自动注入**： 将项目树注入 `CLAUDE.md`，为 AI 提供结构化导航。
+*   **按需精简**: 支持通过 `.claude/tree_config` 控制目录深度和文件可见性，并节省上下文 Token。
+    ```text
+    # Example .claude/tree_config
+    src/core -depth -1 -if_file true  # 深入索引核心代码，包含文件 （-1 表示无限深度）
+    tests/   -depth 1                 # 测试目录仅保留浅层结构
+    !legacy/                          # 排除遗留代码目录
+    ```
 
 ### 3. 环境与路径防护
 *   **路径归一化**: 通过 `hooks/pre_tool_guard.py` 拦截绝对路径，自动转换为项目内相对路径。
@@ -46,9 +53,13 @@
 ### 4. 上下文持久化
 *   **自动快照**: 通过 `hooks/context_manager.py` 在压缩前生成项目状态快照 (`.claude/context_snapshot.md`)。
 *   **无缝衔接**: 新会话启动时自动加载快照，恢复分支、提交记录及关键文件索引。
+*   **历史索引 (Milestone System)**:
+    *   **架构**: 采用 "Timeline Index + Report Details" 的双层存储结构。
+    *   **持久化**: 通过 `/milestone` 命令生成结构化历史报告，并更新 `.claude/history/timeline.md` 索引。
+    *   **渐进披露**: `CLAUDE.md` 仅引用 Timeline 索引，AI 根据需要按需读取具体的历史报告，从而在保持长期记忆的同时节省 Token 上下文。
 
 ### 5. 核心开发工作流
-本项目定义了严格的 "Plan-Act-Verify" 闭环，以下 Skills 需由用户**主动调用** (作为 Slash Commands)：
+本项目定义了严格的 "Plan-Act-Verify" 闭环，以下 Skills 或 Commands 需由用户**主动调用**：
 
 1.  **架构预审 (`/deep-plan`)**
     *   **阶段**: 计划阶段 (Plan)，在编写任何代码之前。
@@ -62,19 +73,15 @@
             *   `物理变更预演` (文件级操作)
     *   **功能**: 执行 "零决策" 架构审计，强制识别歧义与副作用。
 
-2.  **里程碑报告 (`/milestone`)**
-    *   **阶段**: 阶段性任务完成或 `/compact` 之前。
-    *   **功能**: 手动触发生成结构化历史报告，记录技术决策、实验结果与遗留问题，并更新 `.claude/history/timeline.md` 索引。**强制**在上下文压缩前使用以固化记忆。
-
-3.  **工程化修改 (`/code-modification`)**
+2.  **代码修改 (`/code-modification`)**
     *   **阶段**: 执行阶段 (Act)，获得架构批准后。
     *   **功能**: 遵循 "Forked Context" 模式，强制执行数据流下游适配、框架完整性检查 (JIT/Numba) 及防御性编程。
 
-4.  **变更固化 (`/log-change`)**
+3.  **变更固化 (`/log-change`)**
     *   **阶段**: 单次修改完成后。
     *   **功能**: 生成原子化的变更日志，记录 Q&A 与 Systemic Impact，作为审计阶段的信源之一。
 
-5.  **上下文回退（`/rewind`）**
+4.  **上下文回退（`/rewind`）**
     *   **阶段**: 生成标准化变更日志后。
     *   **操作**：使用 /rewind 命令将对话上下文回退（Restore conversation only）到计划审计完成后、修改执行前的检查点。
     *   **功能**：确保 AI 不持对修改过程的记忆，从而避免在后续交互中引入偏见或误导，保持独立性。
@@ -82,6 +89,12 @@
 5.  **三方审计 (`/auditor`)**
     *   **阶段**: 验证阶段 (Verify)，代码合并前。
     *   **功能**: 扮演 "对抗性审计员"，在无上下文前提下，基于变更日志进行 **"意图-日志-代码"** 的三方一致性校验。
+
+6.  **Git 提交**
+
+7.  **里程碑报告 (`/milestone`)**
+    *   **阶段**: 阶段性任务完成或 `/compact` 之前。
+    *   **功能**: 手动触发生成结构化历史报告，记录技术决策、实验结果与遗留问题，并更新 `.claude/history/timeline.md` 索引。构建长期记忆，实现渐进式历史回顾。
 
 ## 目录结构
 
@@ -103,6 +116,8 @@
 │   ├── update-tree/                # 树更新: 手动刷新快照 (Proactive 模式)
 │   └── ...                         # 其他工程化技能 (TDD, Debugging, FileOps 等)
 └── hooks/                          # 自动化钩子系统
+    ├── doc_manager/                # 文档管理
+    │   └── injector.py             # CLAUDE.md 引用注入器
     ├── pre_tool_guard.py           # 工具前置拦截 (路径、命名、环境)
     ├── context_manager.py          # 上下文快照与恢复 (SessionStart/PreCompact)
     ├── env_system/                 # 约束增强系统
