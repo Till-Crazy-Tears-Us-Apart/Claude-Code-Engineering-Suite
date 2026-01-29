@@ -1,5 +1,8 @@
 ---
+name: update-logic-index
 description: Update the semantic logic index (.claude/logic_tree.md) using Gemini AST analysis.
+allowed-tools: Read, Grep, Glob, Bash, Edit, Write
+disable-model-invocation: true
 ---
 
 # Update Logic Index

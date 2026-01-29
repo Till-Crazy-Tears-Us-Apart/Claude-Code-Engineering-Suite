@@ -17,6 +17,8 @@ import hashlib
 import json
 import os
 import sys
+import time
+import random
 import concurrent.futures
 import urllib.request
 import urllib.error
@@ -32,6 +34,12 @@ OUTPUT_MD = os.path.join(".claude", "logic_tree.md")
 DEFAULT_MODEL = "gemini-3-flash-preview"
 DEFAULT_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
 DEFAULT_MAX_WORKERS = 5
+DEFAULT_RETRY_LIMIT = 3
+DEFAULT_TIMEOUT = 60
+
+class FatalError(Exception):
+    """Custom exception to trigger circuit breaker and halt execution."""
+    pass
 
 class LogicIndexer:
     def __init__(self, root_dir):
@@ -39,12 +47,21 @@ class LogicIndexer:
         self.api_key = os.environ.get("GEMINI_API_KEY")
         self.model = os.environ.get("GEMINI_MODEL", DEFAULT_MODEL)
         self.base_url = os.environ.get("GEMINI_BASE_URL", "") # Optional override
+        self.circuit_open = False # Flag to stop all processing on fatal error
 
         # Configure Concurrency
         try:
             self.max_workers = int(os.environ.get("GEMINI_MAX_WORKERS", DEFAULT_MAX_WORKERS))
         except ValueError:
             self.max_workers = DEFAULT_MAX_WORKERS
+
+        # Configure Resilience
+        try:
+            self.retry_limit = int(os.environ.get("GEMINI_RETRY_LIMIT", DEFAULT_RETRY_LIMIT))
+            self.timeout = int(os.environ.get("GEMINI_TIMEOUT", DEFAULT_TIMEOUT))
+        except ValueError:
+            self.retry_limit = DEFAULT_RETRY_LIMIT
+            self.timeout = DEFAULT_TIMEOUT
 
         self.exclusions = []
         self._load_config()
@@ -131,17 +148,31 @@ class LogicIndexer:
         normalized = "".join(source_code.split())
         return hashlib.md5(normalized.encode('utf-8')).hexdigest()
 
-    def _call_gemini(self, prompt):
-        """Calls Gemini API using standard library."""
+    def _determine_thinking_level(self, source_code):
+        """Determines the appropriate thinking_level based on code complexity."""
+        lines = source_code.splitlines()
+        line_count = len(lines)
+
+        # Heuristics for complex logic
+        complex_indicators = ["yield", "__metaclass__", "getattr", "setattr", "eval", "exec", "ast.", "compile("]
+        is_complex = any(indicator in source_code for indicator in complex_indicators)
+
+        if line_count > 100 or is_complex:
+            return "low"
+        return "minimal"
+
+    def _call_gemini(self, prompt, thinking_level="minimal"):
+        """Calls Gemini API using standard library with retry logic."""
         if not self.api_key:
             return "Error: GEMINI_API_KEY not set."
 
+        if self.circuit_open:
+            return "Error: Circuit breaker open."
+
         # Construct URL
         if self.base_url:
-            # Custom base URL provided
             url = f"{self.base_url.rstrip('/')}/models/{self.model}:generateContent?key={self.api_key}"
         else:
-            # Default Google URL
             url = DEFAULT_API_URL.format(model=self.model, api_key=self.api_key)
 
         headers = {"Content-Type": "application/json"}
@@ -151,27 +182,46 @@ class LogicIndexer:
             }],
             "generationConfig": {
                 "temperature": 0.2,
-                "maxOutputTokens": 100
+                "maxOutputTokens": 100,
+                "thinking_config": {
+                    "thinking_level": thinking_level
+                }
             }
         }
 
-        try:
-            req = urllib.request.Request(url, data=json.dumps(data).encode('utf-8'), headers=headers)
-            # Use custom SSL context
-            with urllib.request.urlopen(req, context=self.ssl_context) as response:
-                result = json.loads(response.read().decode('utf-8'))
-                try:
-                    return result['candidates'][0]['content']['parts'][0]['text'].strip()
-                except (KeyError, IndexError):
-                    return "Error: Unexpected API response format."
-        except urllib.error.HTTPError as e:
-            if e.code == 429:
-                return "Error: Rate limit exceeded (429). Try reducing GEMINI_MAX_WORKERS."
-            return f"Error: HTTP {e.code} - {e.reason}"
-        except urllib.error.URLError as e:
-            return f"Error: Network error ({e.reason}). Check your proxy/VPN settings."
-        except Exception as e:
-            return f"Error: {str(e)}"
+        retries = 0
+        while retries <= self.retry_limit:
+            try:
+                req = urllib.request.Request(url, data=json.dumps(data).encode('utf-8'), headers=headers)
+                with urllib.request.urlopen(req, context=self.ssl_context, timeout=self.timeout) as response:
+                    result = json.loads(response.read().decode('utf-8'))
+                    try:
+                        return result['candidates'][0]['content']['parts'][0]['text'].strip()
+                    except (KeyError, IndexError):
+                        return "Error: Unexpected API response format."
+            except urllib.error.HTTPError as e:
+                # Fatal errors: Auth or Rate Limit
+                if e.code in (401, 403, 429):
+                    self.circuit_open = True
+                    raise FatalError(f"Fatal API Error {e.code}: {e.reason}")
+
+                # Retriable errors: Server or Timeout
+                if e.code in (500, 502, 503, 504) and retries < self.retry_limit:
+                    retries += 1
+                    wait = (2 ** retries) + (random.random() * 0.3)
+                    time.sleep(wait)
+                    continue
+                return f"Error: HTTP {e.code} - {e.reason}"
+            except (urllib.error.URLError, TimeoutError, ConnectionError) as e:
+                if retries < self.retry_limit:
+                    retries += 1
+                    wait = (2 ** retries) + (random.random() * 0.3)
+                    time.sleep(wait)
+                    continue
+                return f"Error: Network error ({str(e)})"
+            except Exception as e:
+                return f"Error: {str(e)}"
+        return "Error: Maximum retries exceeded."
 
     def parse_file(self, file_path):
         """Parses a single Python file."""
@@ -296,13 +346,17 @@ class LogicIndexer:
 
     def _worker_task(self, item):
         """Helper for worker execution to allow pickling if needed (though ThreadPool doesn't pickle)"""
+        if self.circuit_open:
+            return None, None
+
         path, symbol, source_code = item
-        prompt_template = self._load_prompt_template() # Re-load or pass in? Loading is fast enough.
+        prompt_template = self._load_prompt_template()
         prompt = prompt_template.format(
             symbol_type=symbol['type'],
             source_code=source_code
         )
-        summary = self._call_gemini(prompt)
+        level = self._determine_thinking_level(source_code)
+        summary = self._call_gemini(prompt, thinking_level=level)
         symbol['summary'] = summary
         return path, symbol
 
@@ -315,20 +369,35 @@ class LogicIndexer:
 
         # Serial Fallback
         if self.max_workers <= 1:
-            for i, item in enumerate(self.dirty_nodes):
-                path, symbol = self._worker_task(item)
-                # Optional: Progress logging
-                # print(f"[{i+1}/{len(self.dirty_nodes)}] Processed {path}::{symbol['name']}")
+            try:
+                for i, item in enumerate(self.dirty_nodes):
+                    if self.circuit_open: break
+                    path, symbol = self._worker_task(item)
+            except FatalError as e:
+                print(f"\n{e}")
             return
 
         # Concurrent Execution
         with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             futures = [executor.submit(self._worker_task, item) for item in self.dirty_nodes]
-            for i, future in enumerate(concurrent.futures.as_completed(futures)):
-                try:
-                    path, symbol = future.result()
-                except Exception as e:
-                    print(f"Error processing item: {e}")
+            try:
+                for i, future in enumerate(concurrent.futures.as_completed(futures)):
+                    if self.circuit_open:
+                        executor.shutdown(wait=False, cancel_futures=True)
+                        break
+                    try:
+                        future.result()
+                    except FatalError as e:
+                        print(f"\n{e}")
+                        self.circuit_open = True
+                        executor.shutdown(wait=False, cancel_futures=True)
+                        break
+                    except Exception as e:
+                        print(f"Error processing item: {e}")
+            except KeyboardInterrupt:
+                print("\nInterrupted by user. Shutting down...")
+                executor.shutdown(wait=False, cancel_futures=True)
+                raise
 
     def generate_markdown(self):
         """Generates the final tree view."""
@@ -372,43 +441,51 @@ class LogicIndexer:
     def run(self):
         print("Scanning codebase...")
 
-        # Scan files
-        new_cache = {}
+        try:
+            # Scan files
+            new_cache = {}
 
-        for root, dirs, files in os.walk(self.root_dir):
-            # In-place modify dirs to skip excluded ones
-            dirs[:] = [d for d in dirs if not self._is_excluded(os.path.join(root, d))]
+            for root, dirs, files in os.walk(self.root_dir):
+                # In-place modify dirs to skip excluded ones
+                dirs[:] = [d for d in dirs if not self._is_excluded(os.path.join(root, d))]
 
-            for file in files:
-                full_path = os.path.join(root, file)
-                if file.endswith(".py") and not self._is_excluded(full_path):
-                    result = self.parse_file(full_path)
-                    if result:
-                        new_cache[result["path"]] = result
+                for file in files:
+                    full_path = os.path.join(root, file)
+                    if file.endswith(".py") and not self._is_excluded(full_path):
+                        result = self.parse_file(full_path)
+                        if result:
+                            new_cache[result["path"]] = result
 
-        # Update cache structure but keep existing summaries until LLM fills new ones
-        self.cache = new_cache
+            # Update cache structure but keep existing summaries until LLM fills new ones
+            self.cache = new_cache
 
-        # Process LLM
-        if self.dirty_nodes:
-            if not self.api_key:
-                print("Warning: GEMINI_API_KEY not found. Skipping LLM generation.")
+            # Process LLM
+            if self.dirty_nodes:
+                if not self.api_key:
+                    print("Warning: GEMINI_API_KEY not found. Skipping LLM generation.")
+                else:
+                    self.process_llm_queue()
+
+        except Exception as e:
+            if not isinstance(e, FatalError):
+                print(f"Error during run: {e}")
+        finally:
+            # Always Save Cache (Ensures partial results are kept)
+            self._save_cache()
+
+            # Generate Markdown
+            md_content = self.generate_markdown()
+            os.makedirs(os.path.dirname(OUTPUT_MD), exist_ok=True)
+            with open(OUTPUT_MD, 'w', encoding='utf-8') as f:
+                f.write(md_content)
+
+            print(f"Logic index updated at {OUTPUT_MD}")
+
+            # Trigger Injector (Only if not in a broken state)
+            if not self.circuit_open:
+                self.trigger_injector()
             else:
-                self.process_llm_queue()
-
-        # Save Cache
-        self._save_cache()
-
-        # Generate Markdown
-        md_content = self.generate_markdown()
-        os.makedirs(os.path.dirname(OUTPUT_MD), exist_ok=True)
-        with open(OUTPUT_MD, 'w', encoding='utf-8') as f:
-            f.write(md_content)
-
-        print(f"Logic index generated at {OUTPUT_MD}")
-
-        # Trigger Injector
-        self.trigger_injector()
+                print("Skipping CLAUDE.md injection due to API errors.")
 
 if __name__ == "__main__":
     # Ensure UTF-8

@@ -1,4 +1,12 @@
 {
+  "env": {
+    "GEMINI_API_KEY": "YOUR_API_KEY_HERE",
+    "GEMINI_MODEL": "gemini-3-flash-preview",
+    "GEMINI_MAX_WORKERS": "5",
+    "GEMINI_BASE_URL": "https://generativelanguage.googleapis.com/v1beta",
+    "GEMINI_RETRY_LIMIT": "3",
+    "GEMINI_TIMEOUT": "60"
+  },
   "permissions": {
     "allow": [
       "Skill(code-modification)",
@@ -16,12 +24,6 @@
       "Skill(update-tree)",
       "Skill(update-logic-index)"
     ]
-  },
-  "env": {
-    "GEMINI_API_KEY": "YOUR_API_KEY_HERE",
-    "GEMINI_MODEL": "gemini-3-flash-preview",
-    "GEMINI_MAX_WORKERS": "5",
-    "GEMINI_BASE_URL": "https://generativelanguage.googleapis.com/v1beta"
   },
   "hooks": {
     "PreToolUse": [
