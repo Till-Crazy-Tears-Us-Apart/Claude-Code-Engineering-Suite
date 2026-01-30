@@ -73,7 +73,11 @@
             *   `物理变更预演` (文件级操作)
     *   **功能**: 执行 "零决策" 架构审计，强制识别歧义与副作用。
 
-2.  **代码修改 (`/code-modification`)**
+2.  **逻辑索引更新 (`/update-logic-index`)**
+    *   **阶段**: 引入新依赖、重构核心逻辑或阅读大型项目前。
+    *   **功能**: 基于 AST 解析与 Gemini API 推理，生成跨文件语义摘要与数据流向标签 (`[Source]/[Sink]`)，并自动注入到 `CLAUDE.md` 上下文中。支持增量更新与依赖感知哈希。
+
+3.  **代码修改 (`/code-modification`)**
     *   **阶段**: 执行阶段 (Act)，获得架构批准后。
     *   **功能**: 遵循 "Forked Context" 模式，强制执行数据流下游适配、框架完整性检查 (JIT/Numba) 及防御性编程。
 
@@ -106,12 +110,13 @@
 ├── output-styles/                  # 输出风格定义
 │   └── python-architect.md         # 工程师角色卡 (定义语气、反模式与词汇表)
 ├── skills/                         # 动态技能库 (按需加载)
-│   ├── deep-plan/                  # 深度计划: 架构预审协议
+│   ├── deep-plan/                  # [深度计划](skills/deep-plan/README.md): 架构预审协议
+│   ├── update-logic-index/         # [逻辑索引](skills/update-logic-index/README.md): 语义摘要生成 (AST + Gemini)
 │   ├── code-modification/          # 代码修改: 工程化改动协议
 │   ├── log-change/                 # 日志固化: 变更记录生成
 │   ├── auditor/                    # 审计代理: 三方一致性校验
-│   ├── milestone/                  # 里程碑: 历史记录与阶段性总结
-│   ├── update-tree/                # 树更新: 手动刷新快照 (Proactive 模式)
+│   ├── milestone/                  # [里程碑](skills/milestone/README.md): 历史记录与阶段性总结
+│   ├── update-tree/                # [树更新](skills/update-tree/README.md): 手动刷新快照 (Proactive 模式)
 │   └── ...                         # 其他工程化技能 (TDD, Debugging, FileOps 等)
 └── hooks/                          # 自动化钩子系统
     ├── doc_manager/                # 文档管理

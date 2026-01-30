@@ -4,7 +4,7 @@
 @FileName    : injector.py
 @Description : Centralized manager for injecting references into CLAUDE.md.
                Ensures idempotency and atomic updates.
-@Author      : Claude Sonnet 4.5
+@Author      : Till-Crazy-Tears-Us-Apart
 @CreationDate: 2026-01-26
 """
 

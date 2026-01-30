@@ -582,6 +582,8 @@ class LogicIndexer:
         """Generates the final tree view."""
         lines = ["# 🧠 逻辑索引 (Logic Index)"]
         lines.append(f"> Last Updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        lines.append("> **Symbol Types**: `[C]` Class | `[f]` Function")
+        lines.append("> **Tags**: `[Doc]` From Docstring | `[Source]` Data Source | `[Sink]` Data Sink\n")
 
         # Sort by path
         sorted_files = sorted(self.cache.keys())
