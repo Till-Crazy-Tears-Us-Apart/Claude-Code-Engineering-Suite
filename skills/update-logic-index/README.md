@@ -6,15 +6,20 @@ Logic Indexer 是一个基于 AST（抽象语法树）和 Google Gemini API 的�
 
 - **AST 精确解析**: 能够识别 Class、Function、Method 等代码结构，而非简单的文本分块。
 - **跨文件上下文感知**: 自动解析 Python `import` 依赖，将上游模块的语义摘要注入 Prompt，使 LLM 理解跨文件调用链。
+    - **别名支持**: 完整支持 `import ... as ...` 语法解析，消除引用盲区。
 - **增量更新**:
     - **文件级哈希**: 基于源码内容计算 MD5。
     - **依赖感知哈希**: 当被依赖文件的摘要变更时，自动触发下游文件重新分析，确保逻辑一致性。
+    - **精准变更追踪 (Usage-Aware)**: 引入 `UsageVisitor`，仅当被引用符号在当前文件中**实际使用**时才触发更新，大幅减少无效 LLM 调用。
 - **混合摘要策略**:
     - **Docstring 优先**: 自动提取源码中已有的文档字符串（带有 `[Doc]` 标识），零成本。
-    - **短函数跳过**: 对小于 3 行且无文档的函数自动标记为 "Small utility function."。
+    - **短函数跳过**: 对小于 3 行且无文档的函数自动标记为 "Small utility function."（可配置）。
     - **LLM 语义增强**: 仅对复杂逻辑调用 Gemini API 生成摘要。
 - **数据流追踪**: 强制 LLM 识别数据源 `[Source]` 和数据汇点 `[Sink]`，明确数据流向。
-- **健壮性设计**: 内置指数退避重试、严苛熔断机制（遇 429/401 自动停止）和断点续传保护。
+- **健壮性设计**:
+    - **原子回退 (Atomic Fallback)**: 批处理若因 JSON 解析或截断失败，自动降级为单符号处理模式，保证高成功率。
+    - **截断恢复**: 智能检测 API 响应截断，并触发自动重试。
+    - 内置指数退避重试、严苛熔断机制（遇 429/401 自动停止）和断点续传保护。
 
 ## ⚙️ 配置指南
 
@@ -40,6 +45,9 @@ Logic Indexer 是一个基于 AST（抽象语法树）和 Google Gemini API 的�
 | `GEMINI_MAX_WORKERS` | `5` | 并发线程数。若遇 429 限流，请调低此值（建议 1-3）。 |
 | `GEMINI_RETRY_LIMIT` | `3` | API 失败重试次数。 |
 | `GEMINI_TIMEOUT` | `60` | 单次请求超时时间（秒）。 |
+| `GEMINI_MAX_OUTPUT_TOKENS` | `8192` | 响应 Token 上限，防止大文件摘要截断。 |
+| `LOGIC_INDEX_AUTO_INJECT` | `ALWAYS` | `ALWAYS` (自动注入), `ASK` (询问), `NEVER` (仅生成)。 |
+| `LOGIC_INDEX_FILTER_SMALL` | `false` | 是否跳过微型函数（<3行无文档）的 LLM 调用。 |
 
 ### 2. 排除规则 (`.claude/logic_index_config`)
 

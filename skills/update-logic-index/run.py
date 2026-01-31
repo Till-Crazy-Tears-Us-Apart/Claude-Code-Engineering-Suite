@@ -9,7 +9,7 @@
                - Concurrent API calls (ThreadPoolExecutor)
                - Zero-dependency (Standard Library only)
 @Author      : Logic Indexer Skill
-@Version     : 1.2.0
+@Version     : 1.4.0
 """
 
 import ast
@@ -29,7 +29,7 @@ from pathlib import Path
 from datetime import datetime
 
 # --- Configuration ---
-VERSION = "1.3.0"
+VERSION = "1.4.0"
 CACHE_FILE = os.path.join(".claude", "logic_index.json")
 CONFIG_FILE = os.path.join(".claude", "logic_index_config")
 OUTPUT_MD = os.path.join(".claude", "logic_tree.md")
@@ -52,17 +52,21 @@ class ImportVisitor(ast.NodeVisitor):
     def __init__(self, root_dir, current_file_path):
         self.root_dir = root_dir
         self.current_dir = os.path.dirname(current_file_path)
-        self.internal_imports = []
+        # Store as dict: path -> has_alias (boolean)
+        self.internal_imports = {}
 
     def visit_Import(self, node):
         for alias in node.names:
-            self._add_import(alias.name)
+            has_alias = alias.asname is not None
+            self._add_import(alias.name, has_alias)
 
     def visit_ImportFrom(self, node):
         # Base module name (e.g. 'pkg' in 'from pkg import ...')
         module = node.module or ""
 
         for alias in node.names:
+            has_alias = alias.asname is not None
+
             # Construct potential sub-module path
             if module:
                 full_name = f"{module}.{alias.name}"
@@ -70,15 +74,15 @@ class ImportVisitor(ast.NodeVisitor):
                 full_name = alias.name
 
             # Try to resolve specific submodule first (e.g. pkg.module_a)
-            if self._add_import(full_name, node.level):
+            if self._add_import(full_name, has_alias, node.level):
                 continue
 
             # If specific submodule not found, try base module (e.g. pkg containing ClassA)
             # Only if module is not empty (avoid trying to import empty string)
             if module:
-                self._add_import(module, node.level)
+                self._add_import(module, has_alias, node.level)
 
-    def _add_import(self, module_name, level=0):
+    def _add_import(self, module_name, has_alias, level=0):
         # Resolve to potential file path
         if module_name:
             parts = module_name.split('.')
@@ -99,18 +103,41 @@ class ImportVisitor(ast.NodeVisitor):
         py_file = potential_path + ".py"
         init_file = os.path.join(potential_path, "__init__.py")
 
-        found = False
+        found_path = None
         if os.path.exists(py_file):
-            self.internal_imports.append(os.path.relpath(py_file, self.root_dir).replace(os.sep, '/'))
-            found = True
+            found_path = os.path.relpath(py_file, self.root_dir).replace(os.sep, '/')
         elif os.path.exists(init_file):
-            self.internal_imports.append(os.path.relpath(init_file, self.root_dir).replace(os.sep, '/'))
-            found = True
+            found_path = os.path.relpath(init_file, self.root_dir).replace(os.sep, '/')
 
-        return found
+        if found_path:
+            # If path already exists, OR the existing alias flag with new one
+            # If any import of this file uses alias, we treat it as aliased
+            current_alias = self.internal_imports.get(found_path, False)
+            self.internal_imports[found_path] = current_alias or has_alias
+            return True
+
+        return False
+
+class UsageVisitor(ast.NodeVisitor):
+    """AST visitor to collect used identifiers (names and attributes)."""
+    def __init__(self):
+        self.used_names = set()
+
+    def visit_Name(self, node):
+        if isinstance(node.ctx, ast.Load):
+            self.used_names.add(node.id)
+        self.generic_visit(node)
+
+    def visit_Attribute(self, node):
+        self.used_names.add(node.attr)
+        self.generic_visit(node)
 
 class FatalError(Exception):
     """Custom exception to trigger circuit breaker and halt execution."""
+    pass
+
+class TruncatedResponseError(Exception):
+    """Exception raised when API response is incomplete/truncated."""
     pass
 
 class LogicIndexer:
@@ -256,12 +283,25 @@ class LogicIndexer:
         line_count = len(lines)
 
         # Heuristics for complex logic
-        complex_indicators = ["yield", "__metaclass__", "getattr", "setattr", "eval", "exec", "ast.", "compile("]
+        complex_indicators = [
+            "yield", "__metaclass__", "getattr", "setattr", "eval", "exec",
+            "ast.", "compile(", "locals(", "globals(", "importlib", "__import__",
+            "sys.modules", "pickle", "dill"
+        ]
         is_complex = any(indicator in source_code for indicator in complex_indicators)
 
         if line_count > 100 or is_complex:
             return "low"
         return "minimal"
+
+    def _is_complex_code(self, source_code):
+        """Check if code uses dynamic features that require full context."""
+        complex_indicators = [
+            "yield", "__metaclass__", "getattr", "setattr", "eval", "exec",
+            "ast.", "compile(", "locals(", "globals(", "importlib", "__import__",
+            "sys.modules", "pickle", "dill"
+        ]
+        return any(indicator in source_code for indicator in complex_indicators)
 
     def _call_gemini(self, prompt, thinking_level="minimal"):
         """Calls Gemini API using standard library with retry logic."""
@@ -317,18 +357,25 @@ class LogicIndexer:
                     try:
                         text_content = result['candidates'][0]['content']['parts'][0]['text'].strip()
 
-                        # Robust JSON Extraction
+                        # 1. Clean Markdown first
+                        if "```json" in text_content:
+                            text_content = text_content.split("```json")[1].split("```")[0].strip()
+                        elif "```" in text_content:
+                            text_content = text_content.split("```")[1].split("```")[0].strip()
+
+                        # 2. Check for truncation AFTER cleaning
+                        # Gemini JSON responses usually end with ']' (array) or '}' (object)
+                        if not text_content.strip().endswith(('}', ']')):
+                            raise TruncatedResponseError("Response truncated (incomplete JSON)")
+
+                        # 3. Parse JSON
                         try:
-                            # 1. Try direct parse (fast path)
                             json.loads(text_content)
                             return text_content
                         except json.JSONDecodeError:
-                            # 2. Try to extract from markdown blocks
-                            if "```json" in text_content:
-                                text_content = text_content.split("```json")[1].split("```")[0].strip()
-                            elif "```" in text_content:
-                                text_content = text_content.split("```")[1].split("```")[0].strip()
-                            return text_content
+                            # Fallback or re-raise
+                             pass
+                        return text_content
                     except (KeyError, IndexError):
                         print(f"API Debug - Response Structure: {json.dumps(result)[:500]}")
                         return "Error: Unexpected API response format."
@@ -352,6 +399,12 @@ class LogicIndexer:
                     time.sleep(wait)
                     continue
                 return f"Error: Network error ({str(e)})"
+            except TruncatedResponseError:
+                if retries < self.retry_limit:
+                    print(f"Warning: Response truncated. Retrying ({retries+1}/{self.retry_limit})...")
+                    retries += 1
+                    continue
+                raise # Propagate to caller after retries exhausted
             except Exception as e:
                 return f"Error: {str(e)}"
         return "Error: Maximum retries exceeded."
@@ -368,27 +421,50 @@ class LogicIndexer:
             print(f"Skipping {rel_path}: {e}")
             return None
 
-        # Resolve imports
+        # Resolve imports with alias tracking
         visitor = ImportVisitor(self.root_dir, file_path)
         visitor.visit(tree)
-        imports = list(set(visitor.internal_imports))
+        # visitor.internal_imports is now a dict: path -> has_alias
 
-        # Calculate dependency-aware hash
+        # Collect used identifiers for context filtering
+        usage_visitor = UsageVisitor()
+        usage_visitor.visit(tree)
+        used_names = usage_visitor.used_names
+
+        # Check code complexity
+        is_complex = self._is_complex_code(source)
+
+        # Calculate dependency-aware hash with filtering
         dep_summaries = []
-        for imp_path in imports:
+        for imp_path, has_alias in visitor.internal_imports.items():
             cached_imp = self.cache.get(imp_path)
             if cached_imp:
                 for sym in cached_imp.get("symbols", []):
                     if sym.get("summary"):
-                        dep_summaries.append(f"{sym['name']}:{sym['summary']}")
+                        # Logic: Include summary IF:
+                        # 1. Code is complex (dynamic features used)
+                        # 2. Import uses alias (e.g. import utils as u)
+                        # 3. Symbol name is explicitly used in code
+                        # 4. For class methods (Class.Method), check if Method is used
+                        is_used = sym['name'] in used_names
+                        if not is_used and "." in sym['name']:
+                             # Check short name for class methods
+                             short_name = sym['name'].split(".")[-1]
+                             is_used = short_name in used_names
+
+                        if is_complex or has_alias or is_used:
+                            dep_summaries.append(f"{sym['name']}:{sym['summary']}")
 
         extra_data = "|".join(sorted(dep_summaries))
         file_hash = self._calculate_hash(source, extra_data)
 
+        # Convert imports dict keys to list for storage
+        import_list = list(visitor.internal_imports.keys())
+
         file_node = {
             "path": rel_path,
             "hash": file_hash,
-            "imports": imports,
+            "imports": import_list,
             "symbols": []
         }
 
@@ -510,16 +586,7 @@ class LogicIndexer:
         if len(source_code) / 3 > 30000: # Simple heuristic for ~30k tokens
             print(f"File {file_path} too large for batch. Falling back to atomic mode.")
             for symbol, segment in items:
-                prompt_template = self._load_prompt_template()
-                # Construct atomic prompt from template (adapting template for single mode)
-                prompt = f"Target Symbol: {symbol['name']}\nDependencies:\n{context_summaries}\nSource Code:\n{segment}\n\nPlease follow the summary rules and return as JSON object within a list."
-                level = self._determine_thinking_level(segment)
-                res = self._call_gemini(prompt, thinking_level=level)
-                try:
-                    data = json.loads(res)
-                    symbol['summary'] = data[0]['summary'] if isinstance(data, list) else data['summary']
-                except Exception:
-                    symbol['summary'] = res
+                self._run_atomic_task(symbol, segment, context_summaries)
             return
 
         target_names = [item[0]['name'] for item in items]
@@ -531,12 +598,16 @@ class LogicIndexer:
         )
 
         level = self._determine_thinking_level(source_code)
-        res = self._call_gemini(prompt, thinking_level=level)
 
         try:
-            if res.startswith("Error:"):
-                print(f"API Error for {file_path}: {res}")
-                return
+            res = self._call_gemini(prompt, thinking_level=level)
+
+            if isinstance(res, str) and res.startswith("Error:"):
+                 # Handle specific errors or generic ones
+                 print(f"API Error for {file_path}: {res}")
+                 # If error is generic or retryable, maybe we want atomic fallback too?
+                 # But _call_gemini returns "Error: ..." string on failure after retries
+                 return
 
             summaries = json.loads(res)
             # Map results back to symbols
@@ -546,9 +617,28 @@ class LogicIndexer:
                     symbol['summary'] = summary_map[symbol['name']]
                 else:
                     print(f"Warning: No summary returned for {symbol['name']} in {file_path}")
+
+        except (json.JSONDecodeError, TruncatedResponseError) as e:
+            print(f"Batch failed for {file_path} ({str(e)}). Switching to atomic mode...")
+            # Atomic Fallback
+            for symbol, segment in items:
+                 self._run_atomic_task(symbol, segment, context_summaries)
         except Exception as e:
             print(f"Error parsing batch response for {file_path}: {e}")
-            print(f"Raw response: {res[:200]}...")
+            # print(f"Raw response: {res[:200]}...")
+
+    def _run_atomic_task(self, symbol, segment, context_summaries):
+        """Helper to run a single symbol task (Atomic Mode)."""
+        prompt_template = self._load_prompt_template()
+        # Construct atomic prompt from template (adapting template for single mode)
+        prompt = f"Target Symbol: {symbol['name']}\nDependencies:\n{context_summaries}\nSource Code:\n{segment}\n\nPlease follow the summary rules and return as JSON object within a list."
+        level = self._determine_thinking_level(segment)
+        try:
+            res = self._call_gemini(prompt, thinking_level=level)
+            data = json.loads(res)
+            symbol['summary'] = data[0]['summary'] if isinstance(data, list) else data['summary']
+        except Exception:
+            symbol['summary'] = "Error generating summary (Atomic fallback failed)"
 
     def process_llm_queue(self):
         """Process dirty nodes grouped by file to minimize API calls."""
