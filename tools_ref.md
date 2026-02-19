@@ -15,3 +15,4 @@
     *   `context_manager.py`: Manages Session Persistence and State Snapshots.
     *   `enforcer_hook.py`: Enforces persona constraints and UserPromptSubmit protocols.
     *   `lifecycle_hook.py`: Manages SessionStart tree injection and update reminders.
+*   **GitHub CLI Integration**: Verified `gh` installation. **Mandatory**: Use `gh` for repository management, issue tracking, and PR operations. **Safety Constraint**: Only use `gh` for **Read-Only** metadata retrieval unless **explicit confirmation** is provided for **Destructive Actions**.

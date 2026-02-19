@@ -8,7 +8,8 @@
     "GEMINI_TIMEOUT": "60",
     "GEMINI_MAX_OUTPUT_TOKENS": "8192",
     "LOGIC_INDEX_AUTO_INJECT": "ALWAYS",
-    "LOGIC_INDEX_FILTER_SMALL": "false"
+    "LOGIC_INDEX_FILTER_SMALL": "false",
+    "REPO_AUDIT_ROOT": "~/claude_audit"
   },
   "permissions": {
     "allow": [
@@ -26,7 +27,8 @@
       "Skill(log-change)",
       "Skill(update-tree)",
       "Skill(read-logic-index)",
-      "Skill(update-logic-index)"
+      "Skill(update-logic-index)",
+      "Skill(repo-audit)"
     ]
   },
   "hooks": {

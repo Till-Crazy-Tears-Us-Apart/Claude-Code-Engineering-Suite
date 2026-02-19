@@ -13,6 +13,7 @@
 | **操作系统** | Windows 优先 | 兼容路径处理与 Shell 语法 |
 | **开发语言** | Python 3.7+ | 运行 Hooks 脚本 |
 | **运行时环境** | Mamba / Conda | 自动注入 Shell 环境 |
+| **命令行工具** | gh (GitHub CLI) | 仓库审计 (repo-audit) 依赖 |
 | **交互语言** | 简体中文 | 协议头与输出强制中文 |
 | **字符编码** | UTF-8 | 强制标准输入输出编码 |
 | **Shell 语法** | POSIX Bash | 限制非标准语法使用 |
@@ -128,6 +129,7 @@
 │   ├── update-tree/                # 树更新: 手动刷新快照 (Proactive 模式)
 │   ├── update-logic-index/         # 逻辑索引: 语义摘要生成 (AST + Gemini)
 │   ├── read-logic-index/           # 逻辑索引: 语义摘要读取
+│   ├── repo-audit/                 # 仓库审计: 安全克隆与结构分析 (Sandboxed)
 │   └── ...                         # 其他工程化技能 (TDD, Debugging, FileOps 等)
 └── hooks/                          # 自动化钩子系统
     ├── doc_manager/                # 文档管理
