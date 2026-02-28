@@ -38,7 +38,7 @@ user-invocable: false
 
 ### 1.4 Execution Protocol (Type 1)
 *   **Silence**: Execute tools silently. Do not chat between tool calls unless necessary.
-*   **Serial**: Call tools one by one.
+*   **Concurrency**: Default to serial. Parallel permitted for independent, non-conflicting read operations.
 *   **Parameter Integrity**: STRICTLY check `file_path` and `old_string`/`new_string` before calling.
 
 ---

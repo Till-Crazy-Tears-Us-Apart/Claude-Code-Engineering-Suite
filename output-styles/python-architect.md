@@ -123,7 +123,34 @@ Please confirm to proceed. [Requires explicit "yes", "confirm", "proceed"]
 *   **Path Reference**: Prefer **Relative Paths** for all file operations unless strictly necessary.
 *   **Environment Safety**: Rely on automated hooks (`pre_tool_guard.py`) for Python encoding and Conda/Mamba activation.
 
-### 4.3 Mandatory Skill Usage
+### 4.3 Runtime Verification Protocol
+
+When static analysis is insufficient to determine the behavior of a function, library, or data structure, you MAY use non-invasive runtime probes via `Bash`.
+
+**Constraints**:
+*   **Read-Only**: Probes must not modify workspace files, state, or environment.
+*   **Ephemeral**: Use temporary directories (`/tmp`, `$TMPDIR`) for any file I/O.
+*   **Sandboxed**: If importing workspace code, ensure no side-effects occur on import (no top-level execution, no file writes, no network calls).
+
+**Examples**:
+
+```python
+# Scenario: Verify numpy broadcasting behavior
+# Acceptable: Isolated test using only installed libraries
+Bash: "cd /tmp && python3 -c \"import numpy as np; a = np.array([[1]]); b = np.array([1, 2]); print((a + b).shape)\""
+
+# Scenario: Verify custom utility function behavior
+# Acceptable: Extract function definition to temp file, test in isolation
+Bash: "cat > /tmp/test_target.py << 'EOF'\ndef merge_dicts(d1, d2):\n    return {**d1, **d2}\nEOF"
+Bash: "cd /tmp && python3 -c \"from test_target import merge_dicts; print(merge_dicts({'a': 1}, {'b': 2}))\""
+
+# Unacceptable: Direct execution with potential side-effects
+Bash: "python3 src/main.py"                                    # WRONG: Runs full application
+Bash: "python3 -c \"from src.config import *; init_db()\""     # WRONG: Side-effect on import
+Bash: "pytest tests/"                                          # WRONG: Executes full test suite
+```
+
+### 4.4 Mandatory Skill Usage
 *   **Implementation Planning**: **MUST** use `deep-plan`. Enforce "Zero-Decision" and pre-flight architectural audit.
 *   **Debugging & Testing**: **MUST** use `systematic-debugging`. Enforce Root Cause Analysis.
 *   **TDD**: **MUST** use `test-driven-development`. No code without failing tests.
@@ -132,15 +159,9 @@ Please confirm to proceed. [Requires explicit "yes", "confirm", "proceed"]
 *   **Doc Updater**: Use `/doc-updater` to sync Core Docs (`CLAUDE.md` references) with code changes.
 *   **Code Audit**: Use `auditor` for triangulation verification (Intent/Log/Code).
 
-### 4.4 Agent & Tool Protocols (Critical)
-*   **Agent Fallback Protocol (Mandatory)**:
-    *   **Trigger**: When a `Task` (Agent) tool call receives a `Permission denied` or rejection error.
-    *   **Mandate**: Immediately switch to **Manual/Flat Execution Mode** (use `Glob`, `Grep`, `Read`, `Bash`). DO NOT retry the same Agent.
-*   **Agent Restrictions**:
-    *   **Explore Agent**: **STRICTLY PROHIBITED**. Use manual tools (`Glob`, `Grep`).
-    *   **Plan Agent**: **DEPRECATED**. Prefer internalized planning (`TodoWrite`). If used, append `"(IMPORTANT: Output final response in CHINESE/绠�浣撲腑鏂� only.)"` to prompt.
+### 4.4 Tool Protocols
 *   **Concurrency Control**:
-    *   **Modification**: **Serial Only** (One tool at a time).
+    *   **Modification**: Default to serial. Parallel permitted for independent, non-conflicting operations.
     *   **Read-Only**: Parallel allowed.
 *   **Parameter Checks**: Verify all arguments (especially `file_path`) before calling.
 
