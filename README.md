@@ -9,7 +9,7 @@
 | 维度 | 要求 | 影响行为 |
 | :--- | :--- | :--- |
 | **软件版本** | Claude Code CLI >= 2.1.10 | 支持事件钩子机制和主动启动 skill |
-| **LLM 模型** | Gemini-3 | 按次计费，上下文上限高，支持复杂推理 |
+| **LLM 模型** | OpenAI-compatible (e.g., GLM, Kimi, Qwen) | 按次计费，上下文上限高，支持复杂推理 |
 | **操作系统** | Windows 优先 | 兼容路径处理与 Shell 语法 |
 | **开发语言** | Python 3.7+ | 运行 Hooks 脚本 |
 | **运行时环境** | Mamba / Conda | 自动注入 Shell 环境 |
@@ -62,7 +62,7 @@
 
 ### 5. 逻辑索引 [📖 Doc](skills/update-logic-index/README.md)
 *   **更新机制 (`/update-logic-index`)**
-    *   **核心功能**: 基于 AST 解析与 Gemini API 推理，生成跨文件语义摘要与数据流向标签 (`[Source]/[Sink]`)。
+    *   **核心功能**: 基于 AST 解析与 LLM API 推理，生成跨文件语义摘要与数据流向标签 (`[Source]/[Sink]`)。
     *   **上下文注入**: 将生成的 `.claude/logic_tree.md` 自动注入到 `CLAUDE.md`，使 AI 在不读取源码的情况下理解项目逻辑。
     *   **精准增量**: 支持依赖感知哈希与 **Usage-Aware** 过滤，仅重新分析受实质影响的文件，大幅降低 Token 消耗。
     *   **版本感知**: 自动记录 Git Commit Hash 与时间戳，确保上下文与代码版本严格对应。
@@ -127,7 +127,7 @@
 │   ├── auditor/                    # 审计代理: 三方一致性校验
 │   ├── milestone/                  # 里程碑: 历史记录与阶段性总结
 │   ├── update-tree/                # 树更新: 手动刷新快照 (Proactive 模式)
-│   ├── update-logic-index/         # 逻辑索引: 语义摘要生成 (AST + Gemini)
+│   ├── update-logic-index/         # 逻辑索引: 语义摘要生成 (AST + LLM)
 │   ├── read-logic-index/           # 逻辑索引: 语义摘要读取
 │   ├── repo-audit/                 # 仓库审计: 安全克隆与结构分析 (Sandboxed)
 │   └── ...                         # 其他工程化技能 (TDD, Debugging, FileOps 等)

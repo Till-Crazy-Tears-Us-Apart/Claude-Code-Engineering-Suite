@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 @FileName    : run.py
-@Description : Logic Indexer - Generates semantic summaries for Python code using AST and Gemini API.
+@Description : Logic Indexer - Generates semantic summaries for Python code using AST and OpenAI-compatible API.
                Features:
                - Incremental updates via MD5 hashing
                - AST-based parsing (Classes + Functions)
@@ -35,12 +35,12 @@ CONFIG_FILE = os.path.join(".claude", "logic_index_config")
 OUTPUT_MD = os.path.join(".claude", "logic_tree.md")
 
 # API Defaults
-DEFAULT_MODEL = "gemini-3-flash-preview"
-DEFAULT_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+DEFAULT_MODEL = "glm-5"
+DEFAULT_API_URL = "https://coding.dashscope.aliyuncs.com/v1/chat/completions"
 DEFAULT_MAX_WORKERS = 5
 DEFAULT_RETRY_LIMIT = 3
 DEFAULT_TIMEOUT = 60
-DEFAULT_MAX_OUTPUT_TOKENS = 8192 # Increased to prevent JSON truncation in large files
+DEFAULT_MAX_TOKENS = 8192
 MAX_CTX_CHARS = 200000
 
 # Feature Flags
@@ -144,30 +144,30 @@ class LogicIndexer:
     def __init__(self, root_dir):
         self.root_dir = os.path.abspath(root_dir)
 
-        self.api_key = os.environ.get("GEMINI_API_KEY")
-        self.model = os.environ.get("GEMINI_MODEL", DEFAULT_MODEL)
-        self.base_url = os.environ.get("GEMINI_BASE_URL", "")
+        self.api_key = os.environ.get("OPENAI_API_KEY")
+        self.model = os.environ.get("OPENAI_MODEL", DEFAULT_MODEL)
+        self.base_url = os.environ.get("OPENAI_BASE_URL", DEFAULT_API_URL)
         self.circuit_open = False
 
         # Concurrency & Performance
         try:
-            self.max_workers = int(os.environ.get("GEMINI_MAX_WORKERS", DEFAULT_MAX_WORKERS))
+            self.max_workers = int(os.environ.get("OPENAI_MAX_WORKERS", DEFAULT_MAX_WORKERS))
         except ValueError:
             self.max_workers = DEFAULT_MAX_WORKERS
 
         try:
-            self.max_output_tokens = int(os.environ.get("GEMINI_MAX_OUTPUT_TOKENS", DEFAULT_MAX_OUTPUT_TOKENS))
+            self.max_tokens = int(os.environ.get("OPENAI_MAX_TOKENS", DEFAULT_MAX_TOKENS))
         except ValueError:
-            self.max_output_tokens = DEFAULT_MAX_OUTPUT_TOKENS
+            self.max_tokens = DEFAULT_MAX_TOKENS
 
         # Resilience
         try:
-            self.retry_limit = int(os.environ.get("GEMINI_RETRY_LIMIT", DEFAULT_RETRY_LIMIT))
+            self.retry_limit = int(os.environ.get("OPENAI_RETRY_LIMIT", DEFAULT_RETRY_LIMIT))
         except ValueError:
             self.retry_limit = DEFAULT_RETRY_LIMIT
 
         try:
-            self.timeout = int(os.environ.get("GEMINI_TIMEOUT", DEFAULT_TIMEOUT))
+            self.timeout = int(os.environ.get("OPENAI_TIMEOUT", DEFAULT_TIMEOUT))
         except ValueError:
             self.timeout = DEFAULT_TIMEOUT
 
@@ -303,48 +303,31 @@ class LogicIndexer:
         ]
         return any(indicator in source_code for indicator in complex_indicators)
 
-    def _call_gemini(self, prompt, thinking_level="minimal"):
-        """Calls Gemini API using standard library with retry logic."""
+    def _call_llm(self, prompt):
+        """Calls OpenAI-compatible API using standard library with retry logic."""
         if not self.api_key:
-            return "Error: GEMINI_API_KEY not set."
+            return "Error: OPENAI_API_KEY not set."
 
         if self.circuit_open:
             return "Error: Circuit breaker open."
 
-        # Construct URL
-        if self.base_url:
-            url = f"{self.base_url.rstrip('/')}/models/{self.model}:generateContent?key={self.api_key}"
-        else:
-            url = DEFAULT_API_URL.format(model=self.model, api_key=self.api_key)
+        url = self.base_url
 
-        headers = {"Content-Type": "application/json"}
-        data = {
-            "contents": [{
-                "parts": [{"text": prompt}]
-            }],
-            "generationConfig": {
-                "temperature": 0.2,
-                "maxOutputTokens": self.max_output_tokens,
-                "responseMimeType": "application/json",
-                "responseJsonSchema": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "name": {"type": "string"},
-                            "summary": {"type": "string"}
-                        },
-                        "required": ["name", "summary"]
-                    }
-                }
-            }
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}"
         }
 
-        # Handle Thinking Level separately as it's model-dependent
-        if thinking_level != "minimal":
-             data["generationConfig"]["thinkingConfig"] = {
-                "thinkingLevel": thinking_level
-            }
+        data = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": "You are a code analysis assistant. Respond with valid JSON only."},
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.2,
+            "max_tokens": self.max_tokens,
+            "response_format": {"type": "json_object"}
+        }
 
         self.stats["api_calls"] += 1
         retries = 0
@@ -355,37 +338,30 @@ class LogicIndexer:
                     raw_data = response.read().decode('utf-8')
                     result = json.loads(raw_data)
                     try:
-                        text_content = result['candidates'][0]['content']['parts'][0]['text'].strip()
+                        text_content = result['choices'][0]['message']['content'].strip()
 
-                        # 1. Clean Markdown first
                         if "```json" in text_content:
                             text_content = text_content.split("```json")[1].split("```")[0].strip()
                         elif "```" in text_content:
                             text_content = text_content.split("```")[1].split("```")[0].strip()
 
-                        # 2. Check for truncation AFTER cleaning
-                        # Gemini JSON responses usually end with ']' (array) or '}' (object)
                         if not text_content.strip().endswith(('}', ']')):
                             raise TruncatedResponseError("Response truncated (incomplete JSON)")
 
-                        # 3. Parse JSON
                         try:
                             json.loads(text_content)
                             return text_content
                         except json.JSONDecodeError:
-                            # Fallback or re-raise
-                             pass
+                            pass
                         return text_content
                     except (KeyError, IndexError):
                         print(f"API Debug - Response Structure: {json.dumps(result)[:500]}")
                         return "Error: Unexpected API response format."
             except urllib.error.HTTPError as e:
-                # Fatal errors: Auth or Rate Limit
                 if e.code in (401, 403, 429):
                     self.circuit_open = True
                     raise FatalError(f"Fatal API Error {e.code}: {e.reason}")
 
-                # Retriable errors: Server or Timeout
                 if e.code in (500, 502, 503, 504) and retries < self.retry_limit:
                     retries += 1
                     wait = (2 ** retries) + (random.random() * 0.3)
@@ -404,7 +380,7 @@ class LogicIndexer:
                     print(f"Warning: Response truncated. Retrying ({retries+1}/{self.retry_limit})...")
                     retries += 1
                     continue
-                raise # Propagate to caller after retries exhausted
+                raise
             except Exception as e:
                 return f"Error: {str(e)}"
         return "Error: Maximum retries exceeded."
@@ -597,16 +573,14 @@ class LogicIndexer:
             context_summaries=context_summaries
         )
 
-        level = self._determine_thinking_level(source_code)
-
         try:
-            res = self._call_gemini(prompt, thinking_level=level)
+            res = self._call_llm(prompt)
 
             if isinstance(res, str) and res.startswith("Error:"):
                  # Handle specific errors or generic ones
                  print(f"API Error for {file_path}: {res}")
                  # If error is generic or retryable, maybe we want atomic fallback too?
-                 # But _call_gemini returns "Error: ..." string on failure after retries
+                 # But _call_llm returns "Error: ..." string on failure after retries
                  return
 
             summaries = json.loads(res)
@@ -632,9 +606,8 @@ class LogicIndexer:
         prompt_template = self._load_prompt_template()
         # Construct atomic prompt from template (adapting template for single mode)
         prompt = f"Target Symbol: {symbol['name']}\nDependencies:\n{context_summaries}\nSource Code:\n{segment}\n\nPlease follow the summary rules and return as JSON object within a list."
-        level = self._determine_thinking_level(segment)
         try:
-            res = self._call_gemini(prompt, thinking_level=level)
+            res = self._call_llm(prompt)
             data = json.loads(res)
             symbol['summary'] = data[0]['summary'] if isinstance(data, list) else data['summary']
         except Exception:
@@ -765,7 +738,7 @@ class LogicIndexer:
             # Process LLM
             if self.dirty_nodes:
                 if not self.api_key:
-                    print("Warning: GEMINI_API_KEY not found. Skipping LLM generation.")
+                    print("Warning: OPENAI_API_KEY not found. Skipping LLM generation.")
                 else:
                     self.process_llm_queue()
 

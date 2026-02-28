@@ -1,13 +1,13 @@
 ---
 name: update-logic-index
-description: Update the semantic logic index (.claude/logic_tree.md) using Gemini AST analysis.
+description: Update the semantic logic index (.claude/logic_tree.md) using LLM AST analysis.
 allowed-tools: Read, Grep, Glob, Bash, Edit, Write
 disable-model-invocation: true
 ---
 
 # Update Logic Index
 
-Updates the semantic understanding of the codebase by scanning Python files, extracting function/class signatures, and generating incremental summaries using Gemini.
+Updates the semantic understanding of the codebase by scanning Python files, extracting function/class signatures, and generating incremental summaries using an OpenAI-compatible LLM API.
 
 ## Process
 
@@ -62,10 +62,10 @@ You MUST execute the following steps strictly in order.
 
 Requires the following environment variables (injected via `settings.json` > `env`):
 
-- `GEMINI_API_KEY`: Google Gemini API Key.
-- `GEMINI_MODEL`: Model name (default: `gemini-3-flash-preview`).
-- `GEMINI_MAX_WORKERS`: Concurrency limit (default: 5).
-- `GEMINI_BASE_URL`: (Optional) Custom API endpoint.
+- `OPENAI_API_KEY`: API Key for OpenAI-compatible service (e.g., Aliyun Bailian).
+- `OPENAI_MODEL`: Model name (default: `glm-5`).
+- `OPENAI_MAX_WORKERS`: Concurrency limit (default: 5).
+- `OPENAI_BASE_URL`: API endpoint (default: `https://coding.dashscope.aliyuncs.com/v1/chat/completions`).
 
 ## Feature Flags
 

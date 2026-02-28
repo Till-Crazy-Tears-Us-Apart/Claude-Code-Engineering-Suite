@@ -1,6 +1,6 @@
 # 🧠 Logic Indexer (推理式语义索引器)
 
-Logic Indexer 是一个基于 AST（抽象语法树）和 Google Gemini API 的语义索引工具。它通过解析 Python 代码并生成精简的语义摘要，帮助 Claude Code 在不读取完整源码的情况下理解项目逻辑。
+Logic Indexer 是一个基于 AST（抽象语法树）和 OpenAI-compatible API 的语义索引工具。它通过解析 Python 代码并生成精简的语义摘要，帮助 Claude Code 在不读取完整源码的情况下理解项目逻辑。
 
 ## 🌟 核心特性
 
@@ -14,7 +14,7 @@ Logic Indexer 是一个基于 AST（抽象语法树）和 Google Gemini API 的�
 - **混合摘要策略**:
     - **Docstring 优先**: 自动提取源码中已有的文档字符串（带有 `[Doc]` 标识），零成本。
     - **短函数跳过**: 对小于 3 行且无文档的函数自动标记为 "Small utility function."（可配置）。
-    - **LLM 语义增强**: 仅对复杂逻辑调用 Gemini API 生成摘要。
+    - **LLM 语义增强**: 仅对复杂逻辑调用 LLM API 生成摘要。
 - **数据流追踪**: 强制 LLM 识别数据源 `[Source]` 和数据汇点 `[Sink]`，明确数据流向。
 - **健壮性设计**:
     - **原子回退 (Atomic Fallback)**: 批处理若因 JSON 解析或截断失败，自动降级为单符号处理模式，保证高成功率。
@@ -30,22 +30,25 @@ Logic Indexer 是一个基于 AST（抽象语法树）和 Google Gemini API 的�
 ```json
 {
   "env": {
-    "GEMINI_API_KEY": "...",
-    "GEMINI_MODEL": "gemini-3-flash-preview",
-    "GEMINI_MAX_WORKERS": "3",
-    "GEMINI_BASE_URL": "https://generativelanguage.googleapis.com/v1beta",
-    "GEMINI_RETRY_LIMIT": "3",
-    "GEMINI_TIMEOUT": "60"
+    "OPENAI_API_KEY": "...",
+    "OPENAI_MODEL": "glm-5",
+    "OPENAI_MAX_WORKERS": "3",
+    "OPENAI_BASE_URL": "https://coding.dashscope.aliyuncs.com/v1/chat/completions",
+    "OPENAI_RETRY_LIMIT": "3",
+    "OPENAI_TIMEOUT": "60"
   }
 }
 ```
 
 | 变量名 | 默认值 | 说明 |
 | :--- | :--- | :--- |
-| `GEMINI_MAX_WORKERS` | `3` | 并发线程数。若遇 429 限流，请调低此值（建议 1-3）。 |
-| `GEMINI_RETRY_LIMIT` | `3` | API 失败重试次数。 |
-| `GEMINI_TIMEOUT` | `60` | 单次请求超时时间（秒）。 |
-| `GEMINI_MAX_OUTPUT_TOKENS` | `8192` | 响应 Token 上限，防止大文件摘要截断。 |
+| `OPENAI_API_KEY` | - | API 密钥（阿里云百炼或其他 OpenAI 兼容服务）。 |
+| `OPENAI_MODEL` | `glm-5` | 模型名称。 |
+| `OPENAI_BASE_URL` | `https://coding.dashscope.aliyuncs.com/v1/chat/completions` | API 端点地址。 |
+| `OPENAI_MAX_WORKERS` | `3` | 并发线程数。若遇 429 限流，请调低此值（建议 1-3）。 |
+| `OPENAI_RETRY_LIMIT` | `3` | API 失败重试次数。 |
+| `OPENAI_TIMEOUT` | `60` | 单次请求超时时间（秒）。 |
+| `OPENAI_MAX_TOKENS` | `8192` | 响应 Token 上限，防止大文件摘要截断。 |
 | `LOGIC_INDEX_AUTO_INJECT` | `ALWAYS` | `ALWAYS` (自动注入), `ASK` (询问), `NEVER` (仅生成)。 |
 | `LOGIC_INDEX_FILTER_SMALL` | `false` | 是否跳过微型函数（<3行无文档）的 LLM 调用。 |
 
@@ -60,26 +63,25 @@ Logic Indexer 是一个基于 AST（抽象语法树）和 Google Gemini API 的�
 !setup.py        # 排除特定文件
 ```
 
-## 💰 成本控制与 Thinking 模式
+## 💰 成本控制
 
-Logic Indexer 针对 Gemini 3 Flash 模型采用了动态 Thinking Level 策略以节省成本：
+Logic Indexer 采用智能策略降低 LLM 调用成本：
 
-| 代码复杂度 | 判定依据 | Thinking Level | 说明 |
-| :--- | :--- | :--- | :--- |
-| **Simple** | 行数 < 100 且无元编程关键词 | `MINIMAL` | 极速模式，消耗极少 Token。 |
-| **Complex** | 行数 > 100 或包含 `yield`/`eval` 等 | `low` | 开启轻量推理，确保复杂逻辑总结准确。 |
+- **Docstring 优先**: 若函数已有文档字符串，直接提取使用（`[Doc]` 模式），零 API 成本。
+- **短函数跳过**: 小于 3 行且无文档的函数自动标记，跳过 LLM 调用。
+- **依赖感知增量更新**: 仅当文件内容或依赖变更时才重新生成摘要。
 
-> **提示**: 尽量为代码编写 Docstring！如果函数有 Docstring，系统会直接使用它（`[Doc]` 模式），完全不调用 API，成本为 0。
+> **提示**: 尽量为代码编写 Docstring！这是降低成本的最有效方式。
 
 ## 🔧 故障排除
 
 ### Q: 遇到 `Fatal API Error 429: Rate limit exceeded`？
-**A**: Gemini 免费层级或低配额账号容易触发限流。
-- **解决**: 将 `GEMINI_MAX_WORKERS` 设置为 `1`（串行模式），或申请更高配额。
+**A**: 免费层级或低配额账号容易触发限流。
+- **解决**: 将 `OPENAI_MAX_WORKERS` 设置为 `1`（串行模式），或申请更高配额。
 
 ### Q: 遇到 `Fatal API Error 403: Forbidden`？
 **A**: API Key 无效或该 Key 无权访问指定的模型。
-- **解决**: 检查 `GEMINI_API_KEY` 是否正确，确认 `GEMINI_MODEL` 在您所在的区域可用。
+- **解决**: 检查 `OPENAI_API_KEY` 是否正确，确认 `OPENAI_MODEL` 在您的服务中可用。
 
 ### Q: 运行中断后，之前的进度会丢失吗？
 **A**: **不会**。系统采用了 `try...finally` 保护机制，即使中途通过 `Ctrl+C` 强行终止或触发熔断，已生成的摘要也会被强制保存到 `.claude/logic_index.json` 中。下次运行将自动跳过已处理的节点。
