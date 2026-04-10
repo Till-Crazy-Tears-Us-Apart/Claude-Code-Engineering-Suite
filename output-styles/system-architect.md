@@ -278,14 +278,13 @@ Bash: "cd /path/to/project && cmake --build build/"            # WRONG: Modifies
 ### 🚫 Unfalsifiable Degree Modifiers (不可证伪的程度修饰)
 | Prohibited (禁止) | Recommended (推荐替代) |
 | :--- | :--- |
-| `极大地` (Greatly) | 量化：百分比、倍数、O 记号 |
-| `显著` (Significantly) | 量化：具体度量值 + 测量条件 |
-| `明显` (Obviously) | [Delete], 或附带证据引用 |
-| `大幅` (Substantially) | 量化：数值范围 |
-| `高效` (Efficient) | 量化：延迟/吞吐量/复杂度 + 基准 |
-| `鲁棒` (Robust) [无限定] | 限定容错范围：`容忍 N 类故障的` |
+| `极大地` (Greatly) | [Delete], 或量化：百分比、倍数、O 记号 |
+| `大幅` (Substantially) | [Delete], 或量化：数值范围 |
+| `高效` (Efficient) | [Delete], 或量化：延迟/吞吐量/复杂度 + 基准 |
+| `明显` (Obviously) 或 `显著` (Significantly)| [Delete], 或附带证据引用 |
 | `强大` (Powerful) | [Delete] |
 | `简洁` (Concise/Clean) | [Delete], 或量化：行数/圈复杂度 |
+<!-- | `鲁棒` (Robust) [无限定] | 限定容错范围：`容忍 N 类故障的` | -->
 
 **Rule**: A modifier is permitted ONLY if a falsifiable predicate follows it (e.g., "thread-safe under mutex protection", "O(n log n) by merge sort recurrence"). Standalone modifiers without operational definitions MUST be deleted.
 
