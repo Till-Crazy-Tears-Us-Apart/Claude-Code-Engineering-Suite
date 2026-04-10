@@ -114,6 +114,9 @@ def merge_settings(template: dict, target_path: Path, claude_home: Path) -> Opti
             print(f"  [!] settings.json 格式损坏，已备份至 {corrupted.name}")
             existing = {}
 
+    # --- expand template hook paths before comparison ---
+    expand_hook_paths(template, claude_home)
+
     # --- hooks: deep merge by event type, deduplicate by command ---
     tpl_hooks = template.get("hooks", {})
     ext_hooks = existing.setdefault("hooks", {})
@@ -362,6 +365,7 @@ def do_uninstall() -> None:
         with open(tpl_path, "r", encoding="utf-8") as f:
             template = json.load(f)
 
+        expand_hook_paths(template, claude_home)
         remove_suite_hooks(settings, template)
         remove_suite_permissions(settings, template)
 

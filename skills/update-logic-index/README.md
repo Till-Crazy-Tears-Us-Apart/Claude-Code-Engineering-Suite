@@ -62,7 +62,7 @@ pip install tree-sitter tree-sitter-c tree-sitter-cpp
     "OPENAI_MAX_WORKERS": "3",
     "OPENAI_BASE_URL": "https://coding.dashscope.aliyuncs.com/v1/chat/completions",
     "OPENAI_RETRY_LIMIT": "3",
-    "OPENAI_TIMEOUT": "60"
+    "OPENAI_TIMEOUT": "300"
   }
 }
 ```
@@ -74,7 +74,7 @@ pip install tree-sitter tree-sitter-c tree-sitter-cpp
 | `OPENAI_BASE_URL` | `https://coding.dashscope.aliyuncs.com/v1/chat/completions` | API 端点 |
 | `OPENAI_MAX_WORKERS` | `3` | 并发线程数 |
 | `OPENAI_RETRY_LIMIT` | `3` | 重试次数 |
-| `OPENAI_TIMEOUT` | `60` | 超时时间（秒） |
+| `OPENAI_TIMEOUT` | `300` | 超时时间（秒） |
 | `OPENAI_MAX_TOKENS` | `8192` | 响应 Token 上限 |
 | `LOGIC_INDEX_AUTO_INJECT` | `ALWAYS` | `ALWAYS`/`ASK`/`NEVER` |
 | `LOGIC_INDEX_FILTER_SMALL` | `false` | 是否跳过微型函数 |
