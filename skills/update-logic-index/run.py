@@ -42,6 +42,7 @@ DEFAULT_MAX_WORKERS = 5
 DEFAULT_RETRY_LIMIT = 3
 DEFAULT_TIMEOUT = 300
 DEFAULT_MAX_TOKENS = 8192
+DEFAULT_LANG = "Simplified Chinese"
 MAX_CTX_CHARS = 200000
 
 DEFAULT_AUTO_INJECT = "ALWAYS"
@@ -88,6 +89,7 @@ class LogicIndexer:
             self.timeout = DEFAULT_TIMEOUT
 
         self.filter_small = str(os.environ.get("LOGIC_INDEX_FILTER_SMALL", DEFAULT_FILTER_SMALL)).lower() == "true"
+        self.lang = os.environ.get("LOGIC_INDEX_LANG", DEFAULT_LANG)
 
         self.exclusions = []
         self._load_config()
@@ -210,7 +212,7 @@ class LogicIndexer:
         data = {
             "model": self.model,
             "messages": [
-                {"role": "system", "content": "You are a code analysis assistant. Respond with valid JSON only."},
+                {"role": "system", "content": f"You are a code analysis assistant. Respond in {self.lang}. Respond with valid JSON only."},
                 {"role": "user", "content": prompt}
             ],
             "temperature": 0.2,
@@ -388,7 +390,8 @@ class LogicIndexer:
         prompt = prompt_template.format(
             source_code=source_code,
             target_symbols=", ".join(target_names),
-            context_summaries=context_summaries
+            context_summaries=context_summaries,
+            lang=self.lang
         )
 
         try:
@@ -418,7 +421,8 @@ class LogicIndexer:
         prompt = prompt_template.format(
             source_code=segment,
             target_symbols=symbol['name'],
-            context_summaries=context_summaries
+            context_summaries=context_summaries,
+            lang=self.lang
         )
         try:
             res = self._call_llm(prompt)

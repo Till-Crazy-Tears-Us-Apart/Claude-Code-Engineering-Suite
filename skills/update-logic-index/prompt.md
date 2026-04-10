@@ -1,4 +1,4 @@
-Task: Analyze the provided Python source code and generate summaries for the specified target symbols in Simplified Chinese (简体中文).
+Task: Analyze the provided Python source code and generate summaries for the specified target symbols in {lang}.
 
 Input Data:
 - Target Symbols: {target_symbols}

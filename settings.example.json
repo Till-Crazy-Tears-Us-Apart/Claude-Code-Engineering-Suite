@@ -11,6 +11,7 @@
     "OPENAI_MAX_TOKENS": "8192",
     "LOGIC_INDEX_AUTO_INJECT": "ALWAYS",
     "LOGIC_INDEX_FILTER_SMALL": "false",
+    "LOGIC_INDEX_LANG": "Simplified Chinese",
     "REPO_AUDIT_ROOT": "~/claude_audit"
   },
   "permissions": {
