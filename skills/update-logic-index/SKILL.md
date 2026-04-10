@@ -7,7 +7,17 @@ disable-model-invocation: true
 
 # Update Logic Index
 
-Updates the semantic understanding of the codebase by scanning Python files, extracting function/class signatures, and generating incremental summaries using an OpenAI-compatible LLM API.
+Updates the semantic understanding of the codebase by scanning source files (Python, C, C++), extracting symbol signatures, and generating incremental summaries using an OpenAI-compatible LLM API.
+
+Supports multi-language projects. Language is detected automatically by file extension:
+- Python: `.py`
+- C: `.c`, `.h`
+- C++: `.cpp`, `.hpp`, `.cc`, `.cxx`, `.hh`, `.hxx`
+
+C/C++ parsing uses regex-based extraction by default (zero external dependencies). Install `tree-sitter` for higher precision (optional):
+```bash
+pip install tree-sitter tree-sitter-c tree-sitter-cpp
+```
 
 ## Process
 

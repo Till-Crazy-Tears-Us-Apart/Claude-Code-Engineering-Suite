@@ -49,7 +49,7 @@ def check_logic_index_status(cwd):
 
             for root, _, files in os.walk(dir_path):
                 for f in files:
-                    if f.endswith('.py'):
+                    if any(f.endswith(ext) for ext in ('.py', '.c', '.h', '.cpp', '.hpp', '.cc', '.cxx')):
                         file_path = os.path.join(root, f)
                         if os.path.getmtime(file_path) > index_mtime:
                             is_stale = True

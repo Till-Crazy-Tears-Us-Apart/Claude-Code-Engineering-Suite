@@ -27,3 +27,5 @@ temp_log/
 .claude/logic_tree.md
 patch_logicindex/
 tests/
+
+skills/update-logic-index/test_*.py

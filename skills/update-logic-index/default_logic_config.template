@@ -22,3 +22,19 @@
 !**/.compact_args.md
 !**/LICENSE
 !.gitignore
+
+# C/C++ build artifacts
+!**/*.o
+!**/*.obj
+!**/*.a
+!**/*.so
+!**/*.dylib
+!**/*.dll
+!**/*.lib
+!**/*.exe
+!**/CMakeFiles/
+!**/CMakeCache.txt
+!**/cmake_install.cmake
+!**/compile_commands.json
+!**/Makefile
+!**/*.d
