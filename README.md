@@ -1,6 +1,6 @@
 # Claude Code Engineering Suite
 
-一套为 [Claude Code](https://code.claude.com) 设计的工程化配置方案，通过 Hooks 拦截、提示词注入与结构化协议，约束 AI 在 Python 开发任务中的行为边界与合规性。
+一套为 [Claude Code](https://code.claude.com) 设计的工程化配置方案，通过 Hooks 拦截、提示词注入与结构化协议，约束 AI 在开发任务中的行为边界与合规性。
 
 ## 环境限制
 
@@ -62,7 +62,8 @@
 
 ### 5. 逻辑索引 [📖 Doc](skills/update-logic-index/README.md)
 *   **更新机制 (`/update-logic-index`)**
-    *   **核心功能**: 基于 AST 解析与 LLM API 推理，生成跨文件语义摘要与数据流向标签 (`[Source]/[Sink]`)。
+    *   **核心功能**: 基于源码解析与 LLM API 推理，生成跨文件语义摘要与数据流向标签 (`[Source]/[Sink]`)。
+    *   **多语言支持**: Python（AST）、C/C++（正则回退 + tree-sitter 可选增强）。
     *   **上下文注入**: 将生成的 `.claude/logic_tree.md` 自动注入到 `CLAUDE.md`，使 AI 在不读取源码的情况下理解项目逻辑。
     *   **精准增量**: 支持依赖感知哈希与 **Usage-Aware** 过滤，仅重新分析受实质影响的文件，大幅降低 Token 消耗。
     *   **版本感知**: 自动记录 Git Commit Hash 与时间戳，确保上下文与代码版本严格对应。
@@ -86,7 +87,7 @@
 
 2.  **代码修改 (`/code-modification`)**
     *   **阶段**: 执行阶段 (Act)，获得架构批准后。
-    *   **功能**: 遵循 "Forked Context" 模式，强制执行数据流下游适配、框架完整性检查 (JIT/Numba) 及防御性编程。
+    *   **功能**: 遵循 "Forked Context" 模式，强制执行数据流下游适配、框架完整性检查及防御性编程。
 
 3.  **变更固化 (`/log-change`)**
     *   **阶段**: 单次修改完成后。
@@ -115,8 +116,11 @@
 
 ```text
 .
+├── install.py                      # 安装脚本 (部署、卸载、验证)
 ├── CLAUDE.md                       # 系统入口，定义核心 Persona 和静态协议
+├── language.md                     # 语言配置 (简体中文)
 ├── style.md                        # 统一协议层 (定义 "Can/Cannot" 边界与 Agent 限制)
+├── tools_ref.md                    # 工具参考 (技能与钩子索引)
 ├── settings.example.json           # 配置文件模板 (含 Hooks 配置)
 ├── output-styles/                  # 输出风格定义
 │   └── python-architect.md         # 工程师角色卡 (定义语气、反模式与词汇表)
@@ -127,7 +131,7 @@
 │   ├── auditor/                    # 审计代理: 三方一致性校验
 │   ├── milestone/                  # 里程碑: 历史记录与阶段性总结
 │   ├── update-tree/                # 树更新: 手动刷新快照 (Proactive 模式)
-│   ├── update-logic-index/         # 逻辑索引: 语义摘要生成 (AST + LLM)
+│   ├── update-logic-index/         # 逻辑索引: 语义摘要生成 (Python/C/C++)
 │   ├── read-logic-index/           # 逻辑索引: 语义摘要读取
 │   ├── repo-audit/                 # 仓库审计: 安全克隆与结构分析 (Sandboxed)
 │   └── ...                         # 其他工程化技能 (TDD, Debugging, FileOps 等)
@@ -146,14 +150,30 @@
 
 ## 安装与配置
 
-### 1. 部署文件
-将本项目内容复制到 Claude Code 全局配置目录 `%USERPROFILE%\.claude\` / `~/.claude/` 下。
+### 1. 安装
+```bash
+git clone https://github.com/<your-repo>/Claude-Code-Engineering-Suite.git
+cd Claude-Code-Engineering-Suite
+python install.py
+```
 
-### 2. 应用配置
-1.  将 `settings.example.json` 的内容合并到您的 `settings.json` 文件中。
-2.  **路径设置**: 必须将所有路径修改为绝对路径 (例如: `C:/Users/YourName/.claude/hooks/...`)。
+安装脚本执行以下操作：
+- 将 `hooks/`、`skills/`、`output-styles/` 及配置文件复制到 `~/.claude/`
+- 将 `settings.example.json` 中的 hooks、permissions、env 合并到 `~/.claude/settings.json`（不覆盖已有值）
+- 自动将 hook 路径展开为当前机器的绝对路径
+- 检测 tree-sitter 是否已安装，未安装时询问是否安装（C/C++ 高精度解析，可选）
 
-### 3. Git 配置 (推荐)
+### 2. 验证
+```bash
+python install.py --verify
+```
+
+### 3. 卸载
+```bash
+python install.py --uninstall
+```
+
+### 4. Git 配置 (推荐)
 为了保持项目整洁，建议将自动生成的元数据目录加入 `.gitignore`：
 ```gitignore
 .claude/
