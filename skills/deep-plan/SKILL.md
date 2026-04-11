@@ -1,7 +1,7 @@
 ---
 name: deep-plan
 description: Use when an implementation plan is proposed but requires a deep architectural audit for risks, side effects, and ambiguities before writing any code.
-allowed-tools: Read, Grep, Glob, Bash
+allowed-tools: Read, Grep, Glob, Bash, Write
 argument-hint: "[plan_summary (optional)]"
 disable-model-invocation: true
 ---
@@ -61,6 +61,68 @@ You MUST read `~/.claude/skills/deep-plan/output_schema.json` (if available) to 
 1.  **Stop & Think**: Do not generate this report if you haven't read the relevant files yet. Read them first.
 2.  **Be Harsh**: The goal is to find problems, not to validate the plan. Play the "Devil's Advocate".
 3.  **No Code Generation**: This step is pure analysis. Do not write implementation code here.
+
+## 5.5 Evidence Packet Generation (Mandatory)
+
+After generating the 4 analysis tables (Section 3), you MUST produce and write an AgentTaskPacketLite JSON file before the stop prompt. This packet is the executable contract for `/code-modification`.
+
+**Steps (execute in order):**
+
+1.  **Get timestamp** (Bash): `date +"%Y%m%d_%H%M%S"` → use result as `{TIMESTAMP}`
+2.  **Get git commit** (Bash, if git repo): `git rev-parse HEAD` → use result as `{COMMIT}`
+3.  **Ensure directory** (Bash): `mkdir -p ".claude/temp_task"`
+4.  **Write packet** (Write tool) to `.claude/temp_task/task_{TIMESTAMP}.json`:
+
+```json
+{
+  "v": "1.0.0",
+  "task": {
+    "id": "task_{TIMESTAMP}",
+    "mode": "write",
+    "summary": "<one sentence describing the change scope from Table 4>",
+    "read_only_until_evidence": true
+  },
+  "sender_payload": {
+    "plan": ["<step 1 from Table 4>", "<step 2>"],
+    "analysis": "<key constraints and risks distilled from Table 3>",
+    "assumptions": ["<any unresolved item from Table 1>"]
+  },
+  "evidence_packet": {
+    "source_revision": {
+      "type": "git",
+      "commit": "{COMMIT}",
+      "retrieved_at": "<current ISO-8601 datetime>"
+    },
+    "evidence": [
+      {
+        "id": "E-001",
+        "file_type": "source",
+        "path": "<repo-relative path>",
+        "range": {"start": 1, "end": 50},
+        "why": "<why this file/range is relevant to the planned change>",
+        "status": "confirmed",
+        "confidence": 0.9,
+        "excerpt": "<verbatim text from that range — do NOT summarize>"
+      }
+    ],
+    "proposed_changes": [
+      {
+        "id": "C-001",
+        "description": "<from Table 4 '简述' column>",
+        "evidence_refs": ["E-001"]
+      }
+    ]
+  }
+}
+```
+
+**Strict Rules:**
+-   `evidence[]`: one item per file you ACTUALLY READ during this audit. Unread files MUST NOT appear.
+-   `excerpt`: MANDATORY verbatim text. Summaries are prohibited.
+-   `status`: use `"confirmed"` only for files read in this session; use `"suspected"` for inferred but unread files.
+-   `proposed_changes[].evidence_refs`: MUST reference at least one evidence ID with `status: "confirmed"`.
+-   If NOT a git repo: use `"type": "filesystem"` and omit `"commit"`.
+-   In the stop prompt (Section 6), include: `📦 Packet: task_{TIMESTAMP}.json | 执行: /code-modification task_{TIMESTAMP}.json`
 
 ## 6. Explicit Stop Protocol (MANDATORY)
 **CRITICAL**: You MUST generate ALL tables and analysis text in your response.

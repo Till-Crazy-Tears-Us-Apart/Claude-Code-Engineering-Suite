@@ -95,6 +95,54 @@ def inject_bash_env(original_command):
 
     return f"{env_vars}{clean_preamble} {original_command}"
 
+def validate_packet(cwd):
+    """
+    Validate the active task packet before allowing Edit/Write operations.
+    Returns (is_valid, error_message). Returns (True, None) if no active packet exists.
+    Fails open on any I/O or parse error to avoid blocking legitimate edits.
+    """
+    active_marker = os.path.join(cwd, ".claude", "temp_task", ".active_packet")
+    if not os.path.exists(active_marker):
+        return True, None
+
+    try:
+        with open(active_marker, "r", encoding="utf-8") as f:
+            packet_filename = f.read().strip()
+
+        packet_path = os.path.join(cwd, ".claude", "temp_task", packet_filename)
+        if not os.path.exists(packet_path):
+            return True, None
+
+        with open(packet_path, "r", encoding="utf-8") as f:
+            packet = json.load(f)
+
+        evidence_list = packet.get("evidence_packet", {}).get("evidence", [])
+        proposed_changes = packet.get("evidence_packet", {}).get("proposed_changes", [])
+
+        if not proposed_changes:
+            return True, None
+
+        evidence_by_id = {item["id"]: item for item in evidence_list}
+
+        for change in proposed_changes:
+            for ref_id in change.get("evidence_refs", []):
+                ev = evidence_by_id.get(ref_id)
+                if ev is None:
+                    return False, (
+                        f"证据 ID '{ref_id}' 在 evidence 列表中不存在"
+                        f"（变更 '{change.get('id', '?')}'）"
+                    )
+                if ev.get("status") in ("suspected", "stale"):
+                    return False, (
+                        f"证据 '{ref_id}' 的状态为 '{ev.get('status')}'，"
+                        f"不允许用于写操作。请先读取并将其更新为 confirmed。"
+                    )
+
+        return True, None
+
+    except (json.JSONDecodeError, KeyError, IOError, OSError):
+        return True, None
+
 def main():
     # Force UTF-8 for stdin/stdout to handle Chinese paths correctly on Windows
     sys.stdin.reconfigure(encoding='utf-8')
@@ -170,6 +218,17 @@ def main():
         additional_context_buffer = []
 
         if tool_name in ["Edit", "Write"]:
+            is_valid, error_msg = validate_packet(cwd)
+            if not is_valid:
+                print(json.dumps({
+                    "hookSpecificOutput": {
+                        "hookEventName": "PreToolUse",
+                        "permissionDecision": "deny",
+                        "permissionDecisionReason": f"🛑 Evidence 验证失败：{error_msg}"
+                    }
+                }))
+                sys.exit(0)
+
             # [NEW] Inject Strict Code Hygiene Rules
             strict_rules = (
                 "CRITICAL CODE HYGIENE:\n"
