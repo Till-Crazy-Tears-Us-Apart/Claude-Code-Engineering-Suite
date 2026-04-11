@@ -70,11 +70,10 @@ Although strict schema validation is disabled, you MUST internally structure you
 **If argument IS provided:**
 1.  **Read**: Load `.claude/temp_task/{task_packet_file}` using the `Read` tool.
     -   If file does not exist: HALT. Report error. Do NOT proceed.
-2.  **Activate**: Use the `Write` tool to write the filename (single line only) to `.claude/temp_task/.active_packet`.
-3.  **Extract constraints**: parse `evidence_packet.proposed_changes[]` as the authoritative change scope.
+2.  **Extract constraints**: parse `evidence_packet.proposed_changes[]` as the authoritative change scope.
     -   MUST NOT make changes outside the described scope.
     -   For any `evidence[]` item with `status: "suspected"`: re-read the referenced `path` and `range` and confirm before proceeding.
-4.  Proceed to Phase 1.
+3.  Proceed to Phase 1.
 
 **If NO argument provided:**
 -   If `.claude/temp_task/.active_packet` exists: run `Bash("rm -f '.claude/temp_task/.active_packet'")` to clear stale state.

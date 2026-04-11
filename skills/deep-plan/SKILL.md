@@ -116,6 +116,8 @@ After generating the 4 analysis tables (Section 3), you MUST produce and write a
 }
 ```
 
+5.  **Update .active_packet** (Bash): `rm -f ".claude/temp_task/.active_packet" && echo "task_{TIMESTAMP}.json" > ".claude/temp_task/.active_packet"`
+
 **Strict Rules:**
 -   `evidence[]`: one item per file you ACTUALLY READ during this audit. Unread files MUST NOT appear.
 -   `excerpt`: MANDATORY verbatim text. Summaries are prohibited.
