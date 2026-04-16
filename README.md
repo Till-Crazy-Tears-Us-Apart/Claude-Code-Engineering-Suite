@@ -81,10 +81,15 @@
             *   `PBT 属性规约` (数学不变量)
             *   `逻辑契约审计` (数据流与风险)
             *   `物理变更预演` (文件级操作)
-    *   **功能**: 执行 "零决策" 架构审计，强制识别歧义与副作用。
+        4.  **Evidence Packet**: 四张表格生成完毕后，强制将证据链、Git Commit、变更范围写入 `.claude/temp_task/task_{TIMESTAMP}.json`（`AgentTaskPacketLite` 格式），并更新 `.active_packet` 指针。停止提示中附带执行入口：`/code-modification task_{TIMESTAMP}.json`。
+    *   **功能**: 执行 "零决策" 架构审计，强制识别歧义与副作用；审计完成后输出可被 `/code-modification` 和 `/auditor` 直接消费的持久化任务包。
 
 2.  **代码修改 (`/code-modification`)**
     *   **阶段**: 执行阶段 (Act)，获得架构批准后。
+    *   **输入**: 可选参数 `task_packet_file`（由 `/deep-plan` 生成）。
+    *   **流程**:
+        *   若提供 `task_packet_file`：读取 `.claude/temp_task/{task_packet_file}`，以 `evidence_packet.proposed_changes[]` 作为权威变更范围，禁止超出该范围修改；`status: "suspected"` 的证据条目须重新读取确认后方可引用。
+        *   若未提供：清除 `.active_packet` 后直接进入发现阶段。
     *   **功能**: 遵循 "Forked Context" 模式，强制执行数据流下游适配、框架完整性检查及防御性编程。
 
 3.  **变更固化 (`/log-change`)**
@@ -98,7 +103,11 @@
 
 5.  **三方审计 (`/auditor`)**
     *   **阶段**: 验证阶段 (Verify)，代码合并前。
-    *   **功能**: 扮演 "对抗性审计员"，在无上下文前提下，基于变更日志进行 **"意图-日志-代码"** 的三方一致性校验。
+    *   **输入**: 变更日志（必填）+ 可选参数 `task_packet_file`。
+    *   **验证模式**:
+        *   若提供 `task_packet_file`：从 `sender_payload.plan` 和 `sender_payload.analysis` 提取初始计划，执行完整**三方校验**（初始计划 vs 变更日志 vs 实际代码）。
+        *   若未提供：执行**两方校验**（变更日志 vs 实际代码），Table 1 的"初始计划"列标记为 `N/A`。
+    *   **功能**: 扮演 "对抗性审计员"，在无上下文前提下进行一致性校验，识别意图与实现的偏差。
 
 6.  **Git 提交**
 
@@ -109,6 +118,22 @@
 8.  **项目树更新 (`/update-tree`)**
     *   **阶段**: 文件结构变更后。
     *   **功能**: 主动刷新 `.claude/project_tree.md` 快照，确保 AI 掌握最新文件结构。支持按需配置扫描深度。
+
+#### 计划-修改-审计 循环
+
+`/deep-plan`、`/code-modification`、`/auditor` 三个技能通过 `.claude/temp_task/` 目录下的 JSON 任务包形成可循环进行的数据流管道：
+
+```
+/deep-plan
+  └─→ 写入 .claude/temp_task/task_{TIMESTAMP}.json  （证据链 + 变更范围）
+  └─→ 更新 .claude/temp_task/.active_packet
+         └─→ /code-modification task_{TIMESTAMP}.json
+               （以 proposed_changes[] 作为权威变更约束）
+                      └─→ /auditor [log_file] task_{TIMESTAMP}.json
+                            （从 sender_payload.plan 提取初始计划，执行三方校验）
+```
+
+若跳过 `/deep-plan` 直接调用后续技能，`/code-modification` 将无约束边界运行，`/auditor` 将退化为两方校验（无初始计划列）。
 
 ## 目录结构
 
