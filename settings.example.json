@@ -12,7 +12,9 @@
     "LOGIC_INDEX_AUTO_INJECT": "ALWAYS",
     "LOGIC_INDEX_FILTER_SMALL": "false",
     "LOGIC_INDEX_LANG": "Simplified Chinese",
-    "REPO_AUDIT_ROOT": "~/claude_audit"
+    "REPO_AUDIT_ROOT": "~/claude_audit",
+    "TIMELINE_INJECT_MODE": "all",
+    "TIMELINE_INJECT_VALUE": ""
   },
   "permissions": {
     "allow": [
@@ -62,10 +64,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"~/.claude/hooks/context_manager.py\""
-          },
-          {
-            "type": "command",
             "command": "python \"~/.claude/hooks/tree_system/lifecycle_hook.py\""
           }
         ]
@@ -84,10 +82,6 @@
     "SessionStart": [
       {
         "hooks": [
-          {
-            "type": "command",
-            "command": "python \"~/.claude/hooks/context_manager.py\""
-          },
           {
             "type": "command",
             "command": "python \"~/.claude/hooks/tree_system/lifecycle_hook.py\""

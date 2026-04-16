@@ -10,6 +10,7 @@
 
 import os
 import re
+import subprocess
 import sys
 
 # Paths
@@ -122,6 +123,15 @@ def main():
 
     if update_timeline(latest_report, summary):
         print("Timeline updated successfully.")
+        try:
+            current_script_dir = os.path.dirname(os.path.abspath(__file__))
+            injector_path = os.path.abspath(os.path.join(current_script_dir, "../../hooks/doc_manager/injector.py"))
+            if os.path.exists(injector_path):
+                subprocess.run([sys.executable, injector_path], cwd=os.getcwd(), check=False)
+            else:
+                print(f"Warning: Injector not found at {injector_path}")
+        except Exception as e:
+            print(f"Warning: Failed to regenerate timeline view: {e}")
     else:
         print("Failed to update timeline.")
 

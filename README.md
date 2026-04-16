@@ -53,8 +53,6 @@
 *   **Agent 拦截**: 拦截高耗时 Agent（如 `Explore`）并请求用户确认。
 
 ### 4. 上下文持久化 [📖 Doc](skills/milestone/README.md)
-*   **自动快照**: 通过 `hooks/context_manager.py` 在压缩前生成项目状态快照 (`.claude/context_snapshot.md`)。
-*   **无缝衔接**: 新会话启动时自动加载快照，恢复分支、提交记录及关键文件索引。
 *   **历史索引 (Milestone System)**:
     *   **架构**: 采用 "Timeline Index + Report Details" 的双层存储结构。
     *   **持久化**: 通过 `/milestone` 命令生成结构化历史报告，并更新 `.claude/history/timeline.md` 索引。
@@ -139,7 +137,6 @@
     ├── doc_manager/                # 文档管理
     │   └── injector.py             # CLAUDE.md 引用注入器
     ├── pre_tool_guard.py           # 工具前置拦截 (路径、命名、环境)
-    ├── context_manager.py          # 上下文快照与恢复 (SessionStart/PreCompact)
     ├── env_system/                 # 约束增强系统
     │   ├── enforcer_hook.py        # 协议注入 (UserPromptSubmit)
     │   └── reminder_prompt.md      # 约束提示词配置
