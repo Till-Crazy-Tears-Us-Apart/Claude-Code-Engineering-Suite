@@ -2,7 +2,9 @@
 
 **Strictly adhere to the protocols defined in the specialized Skills.** Do not rely on defaults.
 
-*   **File Operations**: See `skills/file-ops`. **Mandatory**: PVE Workflow, Streaming Bulk Read, Robust Read-Modify-Read.
+*   **File Operations**: **Mandatory**:
+    *   **Read-Modify-Read**: Pre-Read (confirm context) → `Edit`/`MultiEdit` → Post-Read (verify change). All steps silent.
+    *   **Edit Failure Path** ("String not found"): (1) Grep `new_string`—found → abort as success; (2) re-check `old_string` for whitespace/indent mismatches, retry once; (3) degrade `MultiEdit` to single `Edit` calls; (4) request permission for full Read-Modify-Write-Read.
 *   **Git Workflow**: See `skills/git-workflow`. **Mandatory**: Conventional Commits, Dangerous Ops Confirmation.
 *   **Debugging**: See `skills/systematic-debugging`. **Mandatory**: Root Cause Analysis -> Hypothesis -> Fix.
 *   **TDD**: See `skills/test-driven-development`. **Mandatory**: RED -> GREEN -> REFACTOR.
