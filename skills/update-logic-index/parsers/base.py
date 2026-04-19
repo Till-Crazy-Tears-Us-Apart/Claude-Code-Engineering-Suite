@@ -12,7 +12,7 @@ class SymbolInfo:
     """Represents a single extracted code symbol."""
     name: str
     args: str               # e.g., "(int a, float b)" or "(self, x)"
-    type: str               # "function", "class", "struct", "enum", "typedef", "macro", "namespace"
+    type: str               # "function", "class", "struct", "enum", "typedef", "macro", "namespace", "interface", "type_alias"
     lineno: int
     source_segment: str
     docstring: Optional[str] = None  # For class/struct methods

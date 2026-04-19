@@ -61,7 +61,7 @@
 ### 5. 逻辑索引 [📖 Doc](skills/update-logic-index/README.md)
 *   **更新机制 (`/update-logic-index`)**
     *   **核心功能**: 基于源码解析与 LLM API 推理，生成跨文件语义摘要与数据流向标签 (`[Source]/[Sink]`)。
-    *   **多语言支持**: Python（AST）、C/C++（正则回退 + tree-sitter 可选增强）。
+    *   **多语言支持**: Python（AST）、C/C++（正则回退 + tree-sitter 可选增强）、TypeScript/TSX（正则回退 + tree-sitter 可选增强）。
     *   **上下文注入**: 将生成的 `.claude/logic_tree.md` 自动注入到 `CLAUDE.md`，使 AI 在不读取源码的情况下理解项目逻辑。
     *   **精准增量**: 支持依赖感知哈希与 **Usage-Aware** 过滤，仅重新分析受实质影响的文件，大幅降低 Token 消耗。
     *   **版本感知**: 自动记录 Git Commit Hash 与时间戳，确保上下文与代码版本严格对应。
@@ -154,7 +154,7 @@
 │   ├── auditor/                    # 审计代理: 三方一致性校验
 │   ├── milestone/                  # 里程碑: 历史记录与阶段性总结
 │   ├── update-tree/                # 树更新: 手动刷新快照 (Proactive 模式)
-│   ├── update-logic-index/         # 逻辑索引: 语义摘要生成 (Python/C/C++)
+│   ├── update-logic-index/         # 逻辑索引: 语义摘要生成 (Python/C/C++/TypeScript)
 │   ├── read-logic-index/           # 逻辑索引: 语义摘要读取
 │   ├── repo-audit/                 # 仓库审计: 安全克隆与结构分析 (Sandboxed)
 │   └── ...                         # 其他工程化技能 (TDD, Debugging, FileOps 等)
@@ -183,7 +183,7 @@ python install.py
 - 将 `hooks/`、`skills/`、`output-styles/` 及配置文件复制到 `~/.claude/`
 - 将 `settings.example.json` 中的 hooks、permissions、env 合并到 `~/.claude/settings.json`（不覆盖已有值）
 - 自动将 hook 路径展开为当前机器的绝对路径
-- 检测 tree-sitter 是否已安装，未安装时询问是否安装（C/C++ 高精度解析，可选）
+- 检测 tree-sitter 是否已安装，未安装时询问是否安装（C/C++/TypeScript 高精度解析，可选）
 
 ### 2. 验证
 ```bash

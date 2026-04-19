@@ -38,3 +38,8 @@
 !**/compile_commands.json
 !**/Makefile
 !**/*.d
+
+# TypeScript build artifacts
+!**/*.d.ts
+!**/*.js.map
+!**/*.tsbuildinfo

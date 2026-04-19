@@ -3,7 +3,7 @@
 """
 Logic Indexer - Generates semantic summaries for source code using AST/regex analysis and OpenAI-compatible API.
 Features:
-    - Multi-language support (Python, C, C++) via pluggable parsers
+    - Multi-language support (Python, C, C++, TypeScript) via pluggable parsers
     - Incremental updates via MD5 hashing
     - Concurrent API calls (ThreadPoolExecutor)
     - Zero required external dependencies (Standard Library only; tree-sitter optional)
@@ -30,6 +30,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from parsers.base import LanguageParser, SymbolInfo
 from parsers.python_parser import PythonParser
 from parsers.c_cpp_parser import CCppParser
+from parsers.ts_parser import TSParser
 
 VERSION = "2.0.0"
 CACHE_FILE = os.path.join(".claude", "logic_index.json")
@@ -96,7 +97,7 @@ class LogicIndexer:
         self.cache = self._load_cache()
         self.dirty_nodes = []
 
-        self.parsers = [PythonParser(), CCppParser()]
+        self.parsers = [PythonParser(), CCppParser(), TSParser()]
         self._extension_map = {}
         for parser in self.parsers:
             for ext in parser.get_extensions():
@@ -505,7 +506,7 @@ class LogicIndexer:
         lines = ["# 🧠 逻辑索引 (Logic Index)"]
         lines.append(f"> Last Updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         lines.append(f"> Git Commit: {git_hash}\n")
-        lines.append("> **Symbol Types**: `[C]` Class | `[f]` Function | `[S]` Struct | `[E]` Enum | `[T]` Typedef | `[M]` Macro | `[N]` Namespace")
+        lines.append("> **Symbol Types**: `[C]` Class | `[f]` Function | `[S]` Struct | `[E]` Enum | `[T]` Typedef/TypeAlias | `[M]` Macro | `[N]` Namespace | `[I]` Interface")
         lines.append("> **Tags**: `[Doc]` From Docstring/Doxygen | `[Source]` Data Source | `[Sink]` Data Sink | `[Util]` Utility | `[Test]` Test\n")
 
         sorted_files = sorted(self.cache.keys())
@@ -534,8 +535,10 @@ class LogicIndexer:
             "struct": "S",
             "enum": "E",
             "typedef": "T",
+            "type_alias": "T",
             "macro": "M",
             "namespace": "N",
+            "interface": "I",
         }
         return icons.get(sym_type, "?")
 

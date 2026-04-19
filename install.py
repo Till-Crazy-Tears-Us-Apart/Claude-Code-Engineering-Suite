@@ -298,6 +298,7 @@ def do_install() -> None:
         import tree_sitter  # noqa: F401
         import tree_sitter_c  # noqa: F401
         import tree_sitter_cpp  # noqa: F401
+        import tree_sitter_typescript  # noqa: F401
         ts_installed = True
     except ImportError:
         pass
@@ -305,13 +306,14 @@ def do_install() -> None:
     if ts_installed:
         print("  [i] tree-sitter 已安装，跳过")
     else:
-        answer = input("是否安装 tree-sitter（C/C++ 高精度解析）？[y/N] ").strip().lower()
+        answer = input("是否安装 tree-sitter（C/C++/TypeScript 高精度解析）？[y/N] ").strip().lower()
         if answer == "y":
             import subprocess
             print("  正在安装 tree-sitter ...")
             subprocess.run(
                 [sys.executable, "-m", "pip", "install", "--user",
-                 "tree-sitter", "tree-sitter-c", "tree-sitter-cpp"],
+                 "tree-sitter", "tree-sitter-c", "tree-sitter-cpp",
+                 "tree-sitter-typescript"],
                 check=False,
             )
 
