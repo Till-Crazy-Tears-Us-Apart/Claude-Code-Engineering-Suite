@@ -8,17 +8,19 @@ user-invocable: false
 
 ## 1. Documentation & Code Queries
 *   **Context7**: Query latest library docs and code examples.
-    *   *Use case*: Learning new frameworks (React Hooks, Vue Composition API).
+    *   *Use case*: API syntax, configuration, version migration, library-specific debugging.
     *   *Note*: Requires `resolve-library-id` first.
 *   **DeepWiki**: Query GitHub repository documentation.
-    *   *Use case*: Deep-diving into open source implementations, arch, contribution guides.
+    *   *Use case*: Deep-diving into open source implementations, architecture, contribution guides.
 
-## 2. Information Search
-*   **Exa**: **Primary** AI-powered web search.
-    *   *Capabilities*: Real-time tech news, extract content from URLs.
-*   **Tavily**: **Fallback** comprehensive search & data extraction.
-    *   *Capabilities*: `search`, `extract`, `map` (site structure), `crawl`.
+## 2. Academic Paper Search
+*   **arxiv-mcp-server**: Search and read arXiv papers.
+    *   *Use case*: Finding research papers, downloading and reading paper content.
 
-## 3. Browser Automation
+## 3. Web Search
+*   **WebSearch** (built-in): General web search for current events and recent information.
+    *   *Use case*: Up-to-date information beyond training cutoff; not library-specific docs.
+
+## 4. Browser Automation
 *   **Playwright**: Browser control.
-    *   *Use case*: Automate web operations, testing, form filling, screenshot analysis.
+    *   *Use case*: Automate web operations, form filling, screenshot capture, page interaction.
