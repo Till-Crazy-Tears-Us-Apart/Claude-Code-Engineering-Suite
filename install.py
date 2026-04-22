@@ -13,6 +13,7 @@ import hashlib
 import json
 import os
 import shutil
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -308,7 +309,6 @@ def do_install() -> None:
     else:
         answer = input("是否安装 tree-sitter（C/C++/TypeScript 高精度解析）？[y/N] ").strip().lower()
         if answer == "y":
-            import subprocess
             print("  正在安装 tree-sitter ...")
             subprocess.run(
                 [sys.executable, "-m", "pip", "install", "--user",
