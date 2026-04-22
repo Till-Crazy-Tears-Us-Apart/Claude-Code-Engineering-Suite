@@ -1,10 +1,12 @@
-# Claude Code Engineering Suite
+<p align="center">
+  <img src="logo.svg" width="120" alt="Remy">
+</p>
+
+# Remy
 
 一套为 [Claude Code](https://code.claude.com) 设计的工程化配置方案，通过 Hooks 拦截、提示词注入与结构化协议，约束 AI 在开发任务中的行为边界与合规性。
 
 ## 环境限制
-
-本项目对环境配置有以下偏好：
 
 | 维度 | 要求 | 影响行为 |
 | :--- | :--- | :--- |
@@ -20,17 +22,9 @@
 | **命名规范** | snake_case | 限制文件名格式 |
 | **路径习惯** | 相对路径优先 | 自动转换绝对路径 |
 
-## 设计哲学
-
-本项目遵循“人机协作”原则，拒绝“完全自动化”：
-
-*   **阶段性确认**: 执行修改前强制进行“分析-计划-确认”闭环，禁止盲目执行。
-*   **显式授权**: 读取操作直接执行；写入操作必须通过 `AskUserQuestion` 获取明确授权。
-*   **工具透明**: 优先使用原子化工具链，限制使用不可控的黑盒 Agent。
-
 ## 核心机制
 
-### 1. 交互约束与协议
+### 1. 交互约束
 *   **协议注入**: 通过 `hooks/env_system/enforcer_hook.py` 实现强制 **System Prompt Refreshing**，对抗长上下文带来的指令衰减。
 *   **中断驱动工作流**: 任何用户提问、条件句或错误报告均被视为 **STOP** 信号。严禁在报错后自动执行“打地鼠”式修复。
 *   **反俚语过滤器**: 在提示词中注入词汇表，从源头抑制“痛点/赋能”等非工程化词汇。
@@ -92,16 +86,28 @@
         *   若未提供：清除 `.active_packet` 后直接进入发现阶段。
     *   **功能**: 遵循 "Forked Context" 模式，强制执行数据流下游适配、框架完整性检查及防御性编程。
 
-3.  **变更固化 (`/log-change`)**
+3.  **后验测试 (`/post-verify`)**
+    *   **阶段**: 执行阶段 (Act)，代码修改完成后、变更日志生成前。
+    *   **输入**: 可选参数 `target_files` 或 `changed_functions`。
+    *   **流程**:
+        1.  **Scope Identification**: 提取变更集（`git diff` 或用户指定）。
+        2.  **Test Discovery**: 通过 `frameworks.json` 探测测试框架，映射已有测试覆盖。
+        3.  **Test Creation**: 对无覆盖符号，使用 Jinja2 模板生成临时测试（验证后自动清理）。
+        4.  **Fix Loop**: 失败时执行故障定位（测试缺陷 vs 实现缺陷），须经 `AskUserQuestion` 确认后修改。
+        5.  **Coverage Assessment**: 要求被修改函数/类分支覆盖率 >= 80%。
+        6.  **Assertion Quality Audit**: 通过 `anti_patterns.json` 规则扫描断言反模式，Critical 级别阻塞通过。
+    *   **功能**: 实现阶段完成后的测试覆盖验证，临时测试于验证完成后清理，报告持久化至 `.claude/temp_test/`。
+
+4.  **变更固化 (`/log-change`)**
     *   **阶段**: 单次修改完成后。
     *   **功能**: 生成原子化的变更日志，记录 Q&A 与 Systemic Impact，作为审计阶段的信源之一。
 
-4.  **上下文回退（`/rewind`）**
+5.  **上下文回退（`/rewind`）**
     *   **阶段**: 生成标准化变更日志后。
     *   **操作**：使用 Claude Code 内置的 /rewind 命令将对话上下文回退（Restore conversation only）到计划审计完成后、修改执行前的检查点。
     *   **功能**：确保 AI 不持对修改过程的记忆，从而避免在后续交互中引入偏见或误导，保持独立性。
 
-5.  **三方审计 (`/auditor`)**
+6.  **三方审计 (`/auditor`)**
     *   **阶段**: 验证阶段 (Verify)，代码合并前。
     *   **输入**: 变更日志（必填）+ 可选参数 `task_packet_file`。
     *   **验证模式**:
@@ -109,13 +115,13 @@
         *   若未提供：执行**两方校验**（变更日志 vs 实际代码），Table 1 的"初始计划"列标记为 `N/A`。
     *   **功能**: 扮演 "对抗性审计员"，在无上下文前提下进行一致性校验，识别意图与实现的偏差。
 
-6.  **Git 提交**
+7.  **Git 提交**
 
-7.  **里程碑报告 (`/milestone`)**
+8.  **里程碑报告 (`/milestone`)**
     *   **阶段**: 阶段性任务完成或 `/compact` 之前。
     *   **功能**: 手动触发生成结构化历史报告，记录技术决策、实验结果与遗留问题，并更新 `.claude/history/timeline.md` 索引。构建长期记忆，实现渐进式历史回顾。
 
-8.  **项目树更新 (`/update-tree`)**
+9.  **项目树更新 (`/update-tree`)**
     *   **阶段**: 文件结构变更后。
     *   **功能**: 主动刷新 `.claude/project_tree.md` 快照，确保 AI 掌握最新文件结构。支持按需配置扫描深度。
 
@@ -146,11 +152,12 @@
 ├── tools_ref.md                    # 工具参考 (技能与钩子索引)
 ├── settings.example.json           # 配置文件模板 (含 Hooks 配置)
 ├── output-styles/                  # 输出风格定义
-│   └── python-architect.md         # 工程师角色卡 (定义语气、反模式与词汇表)
+│   └── system-architect.md         # 工程师角色卡 (定义语气、反模式与词汇表)
 ├── skills/                         # 动态技能库 (按需加载)
 │   ├── deep-plan/                  # 深度计划: 架构预审协议
 │   ├── code-modification/          # 代码修改: 工程化改动协议
 │   ├── log-change/                 # 日志固化: 变更记录生成
+│   ├── post-verify/                # 后验测试: 测试发现、覆盖率评估与断言质量审计
 │   ├── auditor/                    # 审计代理: 三方一致性校验
 │   ├── milestone/                  # 里程碑: 历史记录与阶段性总结
 │   ├── update-tree/                # 树更新: 手动刷新快照 (Proactive 模式)
@@ -200,15 +207,6 @@ python install.py --uninstall
 ```gitignore
 .claude/
 ```
-
-## 协议声明
-
-本配置强制 AI 遵守以下工程原则：
-
-*   **Agent 降级**: 废弃 `Plan` 和 `Task` Agent，严禁使用 `Explore` Agent。强制手动工具链。
-*   **修改操作**: 遵循 `Analyze` -> `Plan` -> `Ask (Block)` -> `Execute (Silent)` 流程。
-*   **命名规范**: 强制新文件使用 `snake_case`。
-*   **调试纪律**: 遵循 `Insert` -> `Observe` -> `Fix` -> `Verify` 闭环。
 
 ## 鸣谢 / Credits
 
