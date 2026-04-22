@@ -8,56 +8,69 @@ disable-model-invocation: true
 
 # Change Log Generation Protocol
 
-You must generate a change log file at `.claude/temp_log/_temp_${ARGUMENTS}_[timestamp].md`.
+You must generate a change log file at `.claude/temp_log/_temp_{task_id}_{timestamp}.md`.
 All content MUST be in **Simplified Chinese (简体中文)**.
+
+## External Files
+
+> **Path Convention**: All paths below are relative to `~/.claude/`. Use `Read("~/.claude/skills/log-change/...")` to access them — they are NOT in the project working directory.
+
+| File | Purpose |
+| :--- | :--- |
+| `skills/log-change/output_schema.json` | Context dict structure definition. Populate all required fields. |
+| `skills/log-change/render.py` | Template rendering helper. Uses Jinja2 when available, falls back to `str` formatting. |
+| `skills/log-change/templates/changelog.md.j2` | Jinja2 template for the change log output. |
+
+## Optional Dependency: Jinja2
+
+`render.py` attempts `import jinja2`. If unavailable, all templates are rendered via built-in string formatting (functionally equivalent, but templates are not externally editable in fallback mode). Jinja2 can be installed via `install.py` (optional step).
 
 ## 1. Input Analysis
 - **Task ID**: $1
 - **Status**: $2
 - **Git State**: !`git diff --staged --stat` (summary) AND !`git diff --staged` (details)
 
-## 2. Content Structure (STRICT TEMPLATE)
+## 2. Context Dict Construction
 
-The output file MUST strictly follow this markdown structure:
+Build a context dict matching `output_schema.json`. The dict MUST contain:
 
-```markdown
-# Change Log: [Task ID]
-> Generated: [Current Date] | Status: [Status]
-
-## 1. Pre-Implementation Discussion (Q&A)
-*(Required if multiple rounds of discussion occurred. If no discussion, state "N/A".)*
-- **Q**: [Technical question raised during planning]
-- **A**: [Consensus reached]
-- **Decision**: [Final architectural decision]
-
-## 2. File-Level Modifications
-*(One chapter per modified file)*
-
-### 2.1 [File Path]
-- **Modification Summary**: [Concise description]
-- **Reason**: [Why this change was necessary]
-- **Role in Data Flow**: [Input -> Processing -> Output role]
-- **Ripple Effects**:
-    - [Upstream dependencies affected]
-    - [Downstream consumers affected]
-    - [Cohesion impact]
-- **Code Logic**:
-    - [Line X-Y]: [Explanation of specific logic change]
-
-## 3. Systemic Impact Analysis
-*(No subjective adjectives allowed)*
-- **Data Flow**: [Changes in data passing mechanisms]
-- **Functional Hierarchy**: [Changes in module layering]
-- **Framework Impact**: [Decorator/Middleware effects]
-- **API Consistency**: [Signature changes?]
-- **Performance**: [Complexity analysis / Memory risks]
-
-## 4. Verification Status
-- [ ] Tests Passed: [List tests]
-- [ ] Manual Check: [List checks]
+```python
+{
+    "task_id": "...",
+    "status": "...",
+    "date": "YYYY-MM-DD",
+    "qa_pairs": [
+        {"question": "...", "answer": "...", "decision": "..."}
+    ],
+    "file_modifications": [
+        {
+            "file_path": "...",
+            "summary": "...",
+            "reason": "...",
+            "role": "...",
+            "ripple_effects": ["..."],
+            "logic_explanation": "L42-L58: ..."
+        }
+    ],
+    "systemic_impact": {
+        "data_flow": "...",
+        "functional_hierarchy": "...",
+        "framework_impact": "...",
+        "api_consistency": "...",
+        "performance": "..."
+    },
+    "verification_status": {
+        "tests_passed": ["..."],
+        "manual_checks": ["..."]
+    }
+}
 ```
 
-## 3. Content Standards (Strict)
+## 3. Report Generation
+
+Use `render.save_changelog(project_root, context)` to generate and persist the change log to `.claude/temp_log/`.
+
+## 4. Content Standards (Strict)
 You MUST adhere to the following 4 rules when writing the log:
 
 1.  **Completeness (No Token Saving)**: DO NOT summarize, compress, or omit technical details to save space/tokens. You MUST preserve the FULL technical context.
@@ -65,11 +78,10 @@ You MUST adhere to the following 4 rules when writing the log:
 3.  **Style (Objective)**: Use formal, simple indicative sentences (`Subject` + `Verb` + `Object`). STRICTLY PROHIBIT unnecessary `Adjectives`, `Adverbs`, and `Metaphors`.
 4.  **Epistemic Humility**: DO NOT declare "Fixed" or "Solved" without empirical data (logs/tests). Use "Implemented" or "Attempted" for unverified changes.
 
-## 4. Execution Rule
+## 5. Execution Rule
 - **No Adjectives**: Use "Implemented X", not "Successfully implemented X".
 - **No Innocence Presumption**: Document risks even if tests passed.
-- **Write File**: Use `Write` tool to save the file. Ensure the directory `.claude/temp_log` exists.
 
-## 5. Strict Schema Compliance (Implicit)
+## 6. Strict Schema Compliance (Implicit)
 You MUST read `~/.claude/skills/log-change/output_schema.json` to understand the required verification depth.
-**Do NOT output the JSON block.** Populate the Markdown structure to satisfy the schema's rigor.
+**Do NOT output the JSON block.** Populate the context dict to satisfy the schema's rigor.

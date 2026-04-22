@@ -1,0 +1,49 @@
+# Change Log: {{ task_id }}
+> Generated: {{ date }} | Status: {{ status }}
+
+## 1. Pre-Implementation Discussion (Q&A)
+{% if qa_pairs %}
+{% for qa in qa_pairs %}
+- **Q**: {{ qa.question }}
+- **A**: {{ qa.answer }}
+- **Decision**: {{ qa.decision }}
+{% endfor %}
+{% else %}
+N/A
+{% endif %}
+
+## 2. File-Level Modifications
+{% for mod in file_modifications %}
+
+### 2.{{ loop.index }} {{ mod.file_path }}
+- **Modification Summary**: {{ mod.summary }}
+- **Reason**: {{ mod.reason }}
+- **Role in Data Flow**: {{ mod.role }}
+- **Ripple Effects**:
+{% for effect in mod.ripple_effects %}
+    - {{ effect }}
+{% endfor %}
+- **Code Logic**:
+    - {{ mod.logic_explanation }}
+{% endfor %}
+
+## 3. Systemic Impact Analysis
+- **Data Flow**: {{ systemic_impact.data_flow }}
+- **Functional Hierarchy**: {{ systemic_impact.functional_hierarchy }}
+- **Framework Impact**: {{ systemic_impact.framework_impact }}
+- **API Consistency**: {{ systemic_impact.api_consistency }}
+- **Performance**: {{ systemic_impact.performance }}
+
+## 4. Verification Status
+{% for t in verification_status.tests_passed %}
+- [x] Tests Passed: {{ t }}
+{% endfor %}
+{% if not verification_status.tests_passed %}
+- [ ] Tests Passed: (none)
+{% endif %}
+{% for c in verification_status.manual_checks %}
+- [x] Manual Check: {{ c }}
+{% endfor %}
+{% if not verification_status.manual_checks %}
+- [ ] Manual Check: (none)
+{% endif %}

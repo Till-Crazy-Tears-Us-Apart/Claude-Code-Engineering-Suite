@@ -16,7 +16,8 @@
     "LOGIC_INDEX_LANG": "Simplified Chinese",
     "REPO_AUDIT_ROOT": "~/claude_audit",
     "TIMELINE_INJECT_MODE": "all",
-    "TIMELINE_INJECT_VALUE": ""
+    "TIMELINE_INJECT_VALUE": "",
+    "POST_VERIFY_MAX_RETRIES": "-1"
   },
   "permissions": {
     "allow": [
@@ -33,7 +34,8 @@
       "Skill(update-tree)",
       "Skill(read-logic-index)",
       "Skill(update-logic-index)",
-      "Skill(repo-audit)"
+      "Skill(repo-audit)",
+      "Skill(post-verify)"
     ]
   },
   "hooks": {

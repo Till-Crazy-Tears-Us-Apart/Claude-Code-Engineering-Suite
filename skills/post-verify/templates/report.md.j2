@@ -1,0 +1,50 @@
+# Post-Verify Report
+> Generated: {{ timestamp }}
+> Project: {{ project_name }}
+
+## Change Set
+
+| File | Symbol | Type |
+| :--- | :--- | :--- |
+{% for item in change_set %}
+| `{{ item.file }}` | `{{ item.symbol }}` | {{ item.type }} |
+{% endfor %}
+
+## Test Discovery
+
+| Symbol | Existing Tests | Temporary Tests |
+| :--- | :--- | :--- |
+{% for item in coverage_map %}
+| `{{ item.symbol }}` | {{ item.existing_count }} | {{ item.temp_count }} |
+{% endfor %}
+
+## Test Results
+
+| Test | Status | Duration |
+| :--- | :--- | :--- |
+{% for t in test_results %}
+| `{{ t.name }}` | {{ t.status }} | {{ t.duration }} |
+{% endfor %}
+
+**Summary**: {{ passed }}/{{ total }} passed | Fix iterations: {{ fix_iterations }}
+
+## Branch Coverage
+
+| Symbol | Branches | Covered | Coverage | Status |
+| :--- | :--- | :--- | :--- | :--- |
+{% for c in coverage_data %}
+| `{{ c.symbol }}` | {{ c.branches }} | {{ c.covered }} | {{ c.percent }}% | {{ c.status }} |
+{% endfor %}
+
+## Assertion Quality Audit
+
+| ID | Pattern | Severity | File | Line |
+| :--- | :--- | :--- | :--- | :--- |
+{% for a in audit_findings %}
+| {{ a.id }} | {{ a.pattern_name }} | {{ a.severity }} | `{{ a.file }}` | {{ a.line }} |
+{% endfor %}
+{% if not audit_findings %}
+No anti-patterns detected.
+{% endif %}
+
+## Status: {{ final_status }}

@@ -317,7 +317,27 @@ def do_install() -> None:
                 check=False,
             )
 
-    # 6. Summary
+    # 6. Optional: Jinja2
+    print()
+    j2_installed = False
+    try:
+        import jinja2  # noqa: F401
+        j2_installed = True
+    except ImportError:
+        pass
+
+    if j2_installed:
+        print("  [i] Jinja2 已安装，跳过")
+    else:
+        answer = input("是否安装 Jinja2（post-verify 模板渲染增强）？[y/N] ").strip().lower()
+        if answer == "y":
+            print("  正在安装 Jinja2 ...")
+            subprocess.run(
+                [sys.executable, "-m", "pip", "install", "--user", "Jinja2"],
+                check=False,
+            )
+
+    # 7. Summary
     print(f"\n安装完成。共部署 {len(records)} 个文件。")
     print("建议运行 python install.py --verify 检查安装结果。")
 
@@ -448,11 +468,20 @@ def do_verify() -> None:
     except ImportError:
         pass
 
+    # 6. Jinja2 check (informational)
+    j2_available = False
+    try:
+        import jinja2  # noqa: F401
+        j2_available = True
+    except ImportError:
+        pass
+
     # Report
     print(f"Claude Code Engineering Suite v{SUITE_VERSION} - 安装验证\n")
     print(f"  Python: {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")
     print(f"  目标目录: {claude_home}")
     print(f"  tree-sitter: {'已安装' if ts_available else '未安装（可选）'}")
+    print(f"  Jinja2: {'已安装' if j2_available else '未安装（可选）'}")
     print()
 
     if errors:

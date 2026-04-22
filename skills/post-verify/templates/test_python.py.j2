@@ -1,0 +1,15 @@
+"""Temporary post-verify tests for {{ module_name }}."""
+{% if imports %}
+{% for imp in imports %}
+{{ imp }}
+{% endfor %}
+{% endif %}
+
+{% for tc in test_cases %}
+def test_{{ tc.name }}():
+    """{{ tc.description }}"""
+{% for line in tc.body_lines %}
+    {{ line }}
+{% endfor %}
+
+{% endfor %}
