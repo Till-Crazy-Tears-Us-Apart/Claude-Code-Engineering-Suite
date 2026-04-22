@@ -1,43 +1,77 @@
-# Deep Plan (深度计划审计)
+# Deep Plan (Architecture Pre-Review)
 
-Deep Plan 是一个**零代码** 的架构审计协议。它强制 AI 在编写任何实现代码之前，先完成彻底的歧义消除、不变量定义和逻辑预演。其核心原则是“先决策，后编码”。
+Deep Plan is a **zero-code** architecture audit protocol. It forces the AI to complete thorough ambiguity elimination, invariant definition, and logic simulation before writing any implementation code. The core principle is **"Decide first, code later."**
 
-## 核心流程
+## Core Workflow
 
-1.  **Context Saturation (上下文饱和)**:
-    *   AI 必须首先读取所有相关代码，特别是被调用的底层定义。
-    *   禁止基于猜测或不完整信息制定计划。
+### 1. Context Saturation
 
-2.  **Interactive Ambiguity Resolution (交互式歧义消除)**:
-    *   如果存在多个技术路径（例如：用 Regex 还是 AST？用 Redis 还是内存？），AI **必须**暂停并使用 `AskUserQuestion` 询问用户。
-    *   循环直到所有“待定 (TBD)”项都被转化为“锁定 (Fixed)”的约束。
+The AI must read all relevant source code, especially the underlying definitions of called functions.
+Guessing or planning based on incomplete information is prohibited.
 
-3.  **Strict Audit (严格审计)**:
-    *   一旦歧义消除，AI 将生成一份包含 4 张表的审计报告（详见输出格式）。
+### 2. Interactive Ambiguity Resolution (Loop)
 
-## 输出格式 (审计报告)
+If multiple technical paths exist (e.g., Regex vs AST, Redis vs in-memory), the AI **must** pause and use `AskUserQuestion` (language follows `REMY_LANG`) to ask the user. Upon receiving an answer, the AI must search for related code before proceeding. This loop repeats until all "TBD" items are converted to "Fixed" constraints.
 
-Deep Plan 最终会输出以下四张表格：
+### 3. Strict Audit (4 Tables)
 
-### 1. 🧩 歧义消除矩阵
-记录所有被识别出的决策点及其最终锁定的方案。任何未锁定的歧义都会导致计划被拒绝。
+Once ambiguities are resolved, the AI loads the report template from `audit_template.md` and generates four tables:
 
-### 2. 🧪 PBT 属性规约
-定义代码必须满足的数学不变量（如：幂等性、可逆性）。这指导了后续测试用例的编写。
+| Table | Purpose |
+| :--- | :--- |
+| Ambiguity Resolution Matrix | Records all decision points and their locked solutions. Any unlocked ambiguity rejects the plan. |
+| PBT Property Specification | Defines mathematical invariants (idempotency, reversibility, etc.) to guide test case design. |
+| Logic & Contract Audit | Checks data-flow consistency, complexity (Big-O), concurrency risks, and system side effects. |
+| Physical Change Simulation | Lists every file, function, and operation type to be modified, with ripple effect estimates. |
 
-### 3. ⚖️ 逻辑与契约审计
-检查数据流一致性、复杂度 (Big-O)、并发风险（死锁/竞态）及系统副作用。
+### 4. Evidence Packet Generation
 
-### 4. 🛠️ 物理变更预演
-列出将要修改的每一个文件、函数及具体操作类型，并预估涟漪效应。
+After the 4 tables, the AI writes an `AgentTaskPacketLite` JSON file to `.claude/temp_task/task_{TIMESTAMP}.json`. This packet contains:
 
-## 何时使用
+- **Evidence chain**: Verbatim excerpts from every file read during the audit.
+- **Proposed changes**: File-level operations mapped to evidence references.
+- **Git revision**: Commit hash and timestamp for version tracking.
 
-*   **复杂重构**: 修改核心逻辑或公共组件时。
-*   **新功能开发**: 功能需求尚不明确，或存在多种实现路径时。
-*   **高风险操作**: 涉及数据迁移、权限变更或不可逆操作时。
+The `.active_packet` pointer is updated to reference the new packet.
 
-## 禁止事项
+### 5. Mandatory Stop
 
-*   **禁止写代码**: 在本阶段，AI 被严格禁止生成或修改任何实现代码。
-*   **禁止假定**: AI 不得假设用户的意图，必须通过询问确认。
+The AI stops and presents three options:
+
+> Audit Complete. [Proceed] / [Revise] / [Cancel]?
+
+No code is written during this phase.
+
+## Plan-Modify-Audit Pipeline
+
+Deep Plan is the first stage of a three-skill pipeline:
+
+```
+/deep-plan
+  └─→ Writes .claude/temp_task/task_{TIMESTAMP}.json
+         └─→ /code-modification task_{TIMESTAMP}.json
+               (uses proposed_changes[] as authoritative constraint)
+                      └─→ /auditor [log_file] task_{TIMESTAMP}.json
+                            (three-way verification: plan vs. changelog vs. code)
+```
+
+Skipping `/deep-plan` means `/code-modification` runs without boundary constraints and `/auditor` degrades to two-way verification.
+
+## When to Use
+
+- **Complex refactoring**: Modifying core logic or shared components.
+- **New feature development**: Requirements are unclear or multiple implementation paths exist.
+- **High-risk operations**: Data migrations, permission changes, or irreversible operations.
+
+## Prohibitions
+
+- **No code generation**: The AI is strictly forbidden from generating or modifying any implementation code during this phase.
+- **No assumptions**: The AI must not assume user intent; confirmation via questions is required.
+
+## Related Files
+
+| File | Purpose |
+| :--- | :--- |
+| `SKILL.md` | Full protocol definition (loaded by Claude Code) |
+| `audit_template.md` | Markdown table templates (loaded dynamically during audit) |
+| `output_schema.json` | JSON schema for verification depth |

@@ -21,10 +21,11 @@ LANGUAGE_DIRECTIVES = {
 }
 
 
-def generate_language_md(cwd):
+def generate_language_md():
     lang = os.environ.get("REMY_LANG", "en")
     directive = LANGUAGE_DIRECTIVES.get(lang, LANGUAGE_DIRECTIVES["en"])
-    lang_path = os.path.join(cwd, "language.md")
+    claude_home = os.path.join(os.path.expanduser("~"), ".claude")
+    lang_path = os.path.join(claude_home, "language.md")
     try:
         with open(lang_path, 'w', encoding='utf-8') as f:
             f.write(directive + "\n")
@@ -77,7 +78,7 @@ def main():
         # Trigger update on specific lifecycle events
         if event_name == "SessionStart":
             update_tree(cwd)
-            generate_language_md(cwd)
+            generate_language_md()
 
             lang = os.environ.get("REMY_LANG", "en")
             if lang == "zh-CN":

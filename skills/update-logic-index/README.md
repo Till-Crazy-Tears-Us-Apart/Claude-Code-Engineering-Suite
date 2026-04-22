@@ -1,101 +1,114 @@
-# Logic Indexer (推理式语义索引器)
+# Logic Indexer (Semantic Code Index)
 
-Logic Indexer 是一个基于多语言源码解析和 OpenAI-compatible API 的语义索引工具。它通过解析 Python、C、C++、TypeScript/TSX 代码并生成精简的语义摘要，帮助 Claude Code 在不读取完整源码的情况下理解项目逻辑。
+Logic Indexer is a semantic indexing tool based on multi-language source code parsing and an OpenAI-compatible API. It parses Python, C, C++, and TypeScript/TSX code to generate concise semantic summaries, enabling Claude Code to understand project logic without reading full source files.
 
-## 支持的语言
+## Supported Languages
 
-| 语言 | 扩展名 | 解析方式 |
+| Language | Extensions | Parsing Method |
 | :--- | :--- | :--- |
-| Python | `.py` | 标准库 `ast` 模块（内置） |
-| C | `.c`, `.h` | 正则（内置）/ tree-sitter（可选） |
-| C++ | `.cpp`, `.hpp`, `.cc`, `.cxx`, `.hh`, `.hxx` | 正则（内置）/ tree-sitter（可选） |
-| TypeScript | `.ts`, `.tsx` | 正则（内置）/ tree-sitter（可选，需 `tree-sitter-typescript`） |
+| Python | `.py` | Standard library `ast` module (built-in) |
+| C | `.c`, `.h` | Regex (built-in) / tree-sitter (optional) |
+| C++ | `.cpp`, `.hpp`, `.cc`, `.cxx`, `.hh`, `.hxx` | Regex (built-in) / tree-sitter (optional) |
+| TypeScript | `.ts`, `.tsx` | Regex (built-in) / tree-sitter (optional, requires `tree-sitter-typescript`) |
 
-`.h` 文件自动检测：若包含 `class`、`namespace`、`template` 等 C++ 关键字，使用 C++ 语法解析。
+`.h` files are auto-detected: if they contain C++ keywords (`class`, `namespace`, `template`, etc.), C++ parsing is used.
 
-## 核心特性
+## Core Features
 
-- **多语言支持**: 可插拔的 `LanguageParser` 架构，按文件扩展名自动分发至对应解析器。
-- **AST 精确解析 (Python)**: 识别 Class、Function、Method 等代码结构。
-- **正则 + tree-sitter 双路径 (C/C++/TypeScript)**: 默认零依赖正则模式；安装 tree-sitter 后自动切换至高精度模式。
-- **跨文件上下文感知**: 解析 Python `import` 和 C/C++ `#include "..."` 依赖，将上游模块的语义摘要注入 Prompt。
-- **增量更新**:
-    - **文件级哈希**: 基于源码内容计算 MD5。
-    - **依赖感知哈希**: 被依赖文件的摘要变更时，自动触发下游文件重新分析。
-    - **精准变更追踪 (Usage-Aware)**: 仅当被引用符号在当前文件中实际使用时才触发更新。
-- **混合摘要策略**:
-    - **Docstring/Doxygen 优先**: 自动提取 Python docstring 和 C/C++ Doxygen 注释（`[Doc]` 标识），零成本。
-    - **短函数跳过**: 对小于 3 行且无文档的函数自动标记（可配置）。
-    - **LLM 语义增强**: 仅对复杂逻辑调用 LLM API 生成摘要。
-- **数据流追踪**: 强制 LLM 识别数据源 `[Source]` 和数据汇点 `[Sink]`。
-- **健壮性设计**:
-    - **原子回退 (Atomic Fallback)**: 批处理失败时自动降级为单符号处理模式。
-    - **截断恢复**: 智能检测 API 响应截断并触发自动重试。
-    - 内置指数退避重试、熔断机制（429/401 自动停止）和断点续传保护。
+- **Multi-Language**: Pluggable `LanguageParser` architecture, auto-dispatching by file extension.
+- **AST Parsing (Python)**: Identifies Class, Function, and Method structures.
+- **Regex + tree-sitter Dual Path (C/C++/TypeScript)**: Zero-dependency regex mode by default; automatically switches to high-precision mode when tree-sitter is installed.
+- **Cross-File Context**: Parses Python `import` and C/C++ `#include "..."` dependencies, injecting upstream module summaries into LLM prompts.
+- **Incremental Updates**:
+    - **File-Level Hashing**: MD5-based source content hashing.
+    - **Dependency-Aware Hashing**: Upstream summary changes trigger downstream re-analysis.
+    - **Usage-Aware Filtering**: Only triggers updates when referenced symbols are actually used in the current file.
+- **Hybrid Summary Strategy**:
+    - **Docstring/Doxygen Priority**: Auto-extracts Python docstrings and C/C++ Doxygen comments (`[Doc]` tag), zero API cost.
+    - **Short Function Skip**: Functions under 3 lines without documentation are auto-tagged (configurable).
+    - **LLM Semantic Enhancement**: Only invokes the LLM API for complex logic.
+- **Data Flow Tracking**: Forces LLM to identify data sources `[Source]` and data sinks `[Sink]`.
+- **Robustness**:
+    - **Atomic Fallback**: Batch processing failure triggers automatic degradation to single-symbol mode.
+    - **Truncation Recovery**: Detects API response truncation and triggers automatic retry.
+    - Built-in exponential backoff, circuit breaker (auto-stop on 429/401), and checkpoint protection.
 
-## 安装 tree-sitter（可选）
+## Workflow (3 Steps)
 
-C/C++ 和 TypeScript/TSX 解析默认使用正则模式（零依赖）。安装 tree-sitter 可提升解析精度：
+### Step 1: Check Configuration
+
+The skill checks for `.claude/logic_index_config`. If missing, it creates one from the default template and prompts the user to review exclusion rules before proceeding.
+
+### Step 2: Execute Scanning
+
+Runs the Python indexer:
+
+```bash
+python "~/.claude/skills/update-logic-index/run.py"
+```
+
+On first run (no existing `.claude/logic_tree.md`), a full codebase scan is performed.
+
+### Step 3: Injection Strategy
+
+Based on the `LOGIC_INDEX_AUTO_INJECT` policy:
+
+| Policy | Behavior |
+| :--- | :--- |
+| `ALWAYS` (default) | Automatically injects `logic_tree.md` into `CLAUDE.md` |
+| `ASK` | Prompts user for confirmation before injection |
+| `NEVER` | Only generates files, no injection |
+
+## Installing tree-sitter (Optional)
+
+C/C++ and TypeScript/TSX parsing uses regex mode by default (zero dependencies). Install tree-sitter for higher precision:
 
 ```bash
 pip install tree-sitter tree-sitter-c tree-sitter-cpp tree-sitter-typescript
 ```
 
-**C/C++**：
+**C/C++**:
 
-| 特性 | 正则模式 | tree-sitter 模式 |
+| Feature | Regex Mode | tree-sitter Mode |
 | :--- | :--- | :--- |
-| 函数/struct/enum/macro | 支持 | 支持 |
-| class 方法 | 支持 | 支持 |
-| namespace 嵌套 | 仅外层 | 全部层级 |
-| template class | 不支持 | 支持 |
-| 运算符重载 | 不支持 | 支持 |
+| Function/struct/enum/macro | Supported | Supported |
+| Class methods | Supported | Supported |
+| Namespace nesting | Outer only | All levels |
+| Template class | Not supported | Supported |
+| Operator overloading | Not supported | Supported |
 
-**TypeScript/TSX**：
+**TypeScript/TSX**:
 
-| 特性 | 正则模式 | tree-sitter 模式 |
+| Feature | Regex Mode | tree-sitter Mode |
 | :--- | :--- | :--- |
-| function/class/interface/enum/type/namespace | 支持 | 支持 |
-| 箭头函数（`export const foo = () => {}`） | 不支持 | 支持 |
-| abstract class 方法 | 不支持 | 支持 |
-| 嵌套 namespace 成员 | 不支持 | 支持 |
-| TSX grammar（`.tsx`） | 支持（正则不区分） | 独立 grammar |
+| function/class/interface/enum/type/namespace | Supported | Supported |
+| Arrow functions (`export const foo = () => {}`) | Not supported | Supported |
+| Abstract class methods | Not supported | Supported |
+| Nested namespace members | Not supported | Supported |
+| TSX grammar (`.tsx`) | Supported (no distinction) | Separate grammar |
 
-## 配置指南
+## Configuration
 
-### 1. 环境变量 (`settings.json`)
+### Environment Variables (`settings.json`)
 
-在项目的 `settings.local.json`（或全局 `~/.claude/settings.json`）中配置：
+Configure in `settings.local.json` (project-level) or `~/.claude/settings.json` (global):
 
-```json
-{
-  "env": {
-    "OPENAI_API_KEY": "...",
-    "OPENAI_MODEL": "glm-5",
-    "OPENAI_MAX_WORKERS": "3",
-    "OPENAI_BASE_URL": "https://coding.dashscope.aliyuncs.com/v1/chat/completions",
-    "OPENAI_RETRY_LIMIT": "3",
-    "OPENAI_TIMEOUT": "300"
-  }
-}
-```
-
-| 变量名 | 默认值 | 说明 |
+| Variable | Default | Description |
 | :--- | :--- | :--- |
-| `OPENAI_API_KEY` | - | API 密钥 |
-| `OPENAI_MODEL` | `glm-5` | 模型名称 |
-| `OPENAI_BASE_URL` | `https://coding.dashscope.aliyuncs.com/v1/chat/completions` | API 端点 |
-| `OPENAI_MAX_WORKERS` | `3` | 并发线程数 |
-| `OPENAI_RETRY_LIMIT` | `3` | 重试次数 |
-| `OPENAI_TIMEOUT` | `300` | 超时时间（秒） |
-| `OPENAI_MAX_TOKENS` | `8192` | 响应 Token 上限 |
-| `LOGIC_INDEX_AUTO_INJECT` | `ALWAYS` | `ALWAYS`/`ASK`/`NEVER` |
-| `LOGIC_INDEX_FILTER_SMALL` | `false` | 是否跳过微型函数 |
-| `REMY_LANG` | `en` | 摘要输出语言（`en` / `zh-CN`） |
+| `OPENAI_API_KEY` | — | API key |
+| `OPENAI_MODEL` | `glm-5` | Model name |
+| `OPENAI_BASE_URL` | `https://coding.dashscope.aliyuncs.com/v1/chat/completions` | API endpoint |
+| `OPENAI_MAX_WORKERS` | `3` | Concurrent threads |
+| `OPENAI_RETRY_LIMIT` | `3` | Retry count |
+| `OPENAI_TIMEOUT` | `300` | Timeout in seconds |
+| `OPENAI_MAX_TOKENS` | `8192` | Response token limit |
+| `LOGIC_INDEX_AUTO_INJECT` | `ALWAYS` | `ALWAYS` / `ASK` / `NEVER` |
+| `LOGIC_INDEX_FILTER_SMALL` | `false` | Skip LLM summarization for small functions without docstrings |
+| `REMY_LANG` | `en` | Summary output language (`en` / `zh-CN`) |
 
-### 2. 排除规则 (`.claude/logic_index_config`)
+### Exclusion Rules (`.claude/logic_index_config`)
 
-语法类似 `.gitignore`，`!` 前缀排除，支持通配符。
+Syntax similar to `.gitignore`; `!` prefix for exclusion, supports wildcards.
 
 ```text
 !tests/
@@ -104,9 +117,9 @@ pip install tree-sitter tree-sitter-c tree-sitter-cpp tree-sitter-typescript
 !**/*.o
 ```
 
-## 符号类型
+## Symbol Types
 
-| 图标 | 含义 | 适用语言 |
+| Icon | Meaning | Languages |
 | :--- | :--- | :--- |
 | `[C]` | Class | Python, C++, TypeScript |
 | `[f]` | Function | Python, C, C++, TypeScript |
@@ -117,31 +130,31 @@ pip install tree-sitter tree-sitter-c tree-sitter-cpp tree-sitter-typescript
 | `[N]` | Namespace | C++, TypeScript |
 | `[I]` | Interface | TypeScript |
 
-## 成本控制
+## Cost Control
 
-- **Docstring/Doxygen 优先**: 有文档的符号零 API 成本。
-- **短函数跳过**: 小于 3 行且无文档的函数自动标记。
-- **依赖感知增量更新**: 仅变更时重新生成。
+- **Docstring/Doxygen priority**: Symbols with documentation incur zero API cost.
+- **Short function skip**: Functions under 3 lines without documentation are auto-tagged.
+- **Dependency-aware incremental updates**: Only regenerates on actual changes.
 
-## 故障排除
+## Troubleshooting
 
-### Q: 遇到 `Fatal API Error 429: Rate limit exceeded`？
-将 `OPENAI_MAX_WORKERS` 设置为 `1`（串行模式），或申请更高配额。
+### Q: `Fatal API Error 429: Rate limit exceeded`?
+Set `OPENAI_MAX_WORKERS` to `1` (serial mode), or request a higher quota.
 
-### Q: 遇到 `Fatal API Error 403: Forbidden`？
-检查 `OPENAI_API_KEY` 是否正确，确认 `OPENAI_MODEL` 在服务中可用。
+### Q: `Fatal API Error 403: Forbidden`?
+Check that `OPENAI_API_KEY` is correct and `OPENAI_MODEL` is available on the service.
 
-### Q: 运行中断后进度会丢失吗？
-不会。`try...finally` 保护机制确保已生成的摘要被保存到 `.claude/logic_index.json`。
+### Q: Will progress be lost if interrupted?
+No. The `try...finally` protection mechanism ensures generated summaries are saved to `.claude/logic_index.json`.
 
-### Q: C/C++ 解析精度不够？
-安装 `tree-sitter`（见上方安装说明）。tree-sitter 模式可处理模板、嵌套 namespace、运算符重载等复杂结构。
+### Q: C/C++ parsing precision is insufficient?
+Install `tree-sitter` (see installation section above). tree-sitter mode handles templates, nested namespaces, operator overloading, and other complex structures.
 
-### Q: `.h` 文件被当作 C 解析但实际是 C++ 代码？
-tree-sitter 模式下，`.h` 文件会自动检测 C++ 关键字并切换语法。正则模式下行为相同。
+### Q: `.h` file parsed as C but is actually C++ code?
+Both tree-sitter and regex modes auto-detect C++ keywords in `.h` files and switch syntax accordingly.
 
-### Q: TypeScript/TSX 解析精度不够？
-安装 `tree-sitter-typescript`（见上方安装说明）。tree-sitter 模式额外支持箭头函数、abstract class 方法和嵌套 namespace 成员提取。
+### Q: TypeScript/TSX parsing precision is insufficient?
+Install `tree-sitter-typescript` (see installation section above). tree-sitter mode additionally supports arrow function extraction, abstract class methods, and nested namespace members.
 
-### Q: 箭头函数（`export const foo = () => {}`）未被提取？
-正则回退路径不支持箭头函数提取（箭头函数语法变体过多，正则边界误报率高）。安装 `tree-sitter-typescript` 后，箭头函数通过 `lexical_declaration → variable_declarator → arrow_function` 路径自动提取。
+### Q: Arrow functions (`export const foo = () => {}`) not extracted?
+The regex fallback path does not support arrow function extraction (too many syntax variants, high false-positive rate). After installing `tree-sitter-typescript`, arrow functions are extracted via the `lexical_declaration → variable_declarator → arrow_function` AST path.

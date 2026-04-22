@@ -84,7 +84,7 @@ Requires the following environment variables (injected via `settings.json` > `en
     - `ALWAYS`: Automatically update CLAUDE.md after indexing.
     - `ASK`: Prompt user for confirmation before injection.
     - `NEVER`: Only generate files, do not inject.
-- `LOGIC_INDEX_FILTER_SMALL`: Skip LLM summarization for small (< 3 lines) functions without docstrings. (Default: `true`)
+- `LOGIC_INDEX_FILTER_SMALL`: Skip LLM summarization for small (< 3 lines) functions without docstrings. (Default: `false`)
 
 ## Output
 

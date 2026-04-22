@@ -23,13 +23,9 @@ DEFAULT_IF_FILE = False
 
 class TreeGenerator:
     def __init__(self, root_dir):
-        # Allow passing explicit root_dir, or resolve relative to script
-        if root_dir:
-            self.root_dir = os.path.abspath(root_dir)
-        else:
-            # Script is in hooks/tree_system/ -> root is ../../
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            self.root_dir = os.path.abspath(os.path.join(script_dir, "..", ".."))
+        if not root_dir:
+            raise ValueError("root_dir is required (must be the user's project directory)")
+        self.root_dir = os.path.abspath(root_dir)
 
         self.exclusions = []
         self.inclusions = {}  # path -> {'depth': n, 'if_file': bool}

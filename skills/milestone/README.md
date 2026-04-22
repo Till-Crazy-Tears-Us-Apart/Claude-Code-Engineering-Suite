@@ -1,43 +1,103 @@
-# Milestone (里程碑管理)
+# Milestone (History Reporting)
 
-Milestone 用于在技术开发周期中创建标准化的阶段性报告，并维护项目时间线索引。它强制执行“先审计后留档”的流程，确保技术决策和实验结果被完整记录。
+Milestone creates standardized phase reports during the development cycle and maintains a project timeline index. It enforces a "audit first, then document" workflow to ensure technical decisions and experiment results are fully recorded.
 
-## 核心功能
+## Core Functions
 
-1.  **报告生成**: 自动捕捉最近的 Git 变更记录，生成结构化的 Markdown 报告草稿。
-2.  **时间线同步**: 提取报告摘要，自动更新 `.claude/history/timeline.md` 索引表。
-3.  **文档注入**: 通过 `hooks/doc_manager/injector.py` 自动更新 `CLAUDE.md` 中的时间线引用。
+1. **Report Generation**: Captures recent Git changes and produces a structured Markdown report draft.
+2. **Timeline Sync**: Extracts the report summary and updates the `.claude/history/timeline.md` index table.
+3. **Document Injection**: Updates the timeline reference in `CLAUDE.md` via `hooks/doc_manager/injector.py`.
 
-## 使用流程
+## Workflow
 
-### 1. 生成草稿
-运行 `/milestone` 技能。系统将：
-- 扫描 `git diff --staged` 或最近一次提交。
-- 在 `.claude/history/reports/` 下创建以时间戳命名的报告文件（如 `20260130_103000.md`）。
-- 自动更新 `.claude/history/timeline.md`，添加新行。
+### Phase 1: Context Saturation (Mandatory)
 
-### 2. 编写内容
-用户需编辑生成的报告文件，填写以下必填项（语言由 `REMY_LANG` 环境变量控制）：
-- **1. 工作摘要**: 技术变更的简要总结。
-- **2. 技术决策**: 记录关键架构选择及其理由。
-- **3. 实现细节**: 描述代码变更对数据流和系统状态的影响。
+Before generating any files, the AI must perform a deep audit:
 
-### 3. 同步摘要
-报告编写完成后，再次运行 `/milestone` (或手动执行 `python "~/.claude/skills/milestone/sync_timeline.py"`)。系统将：
-- 读取报告文件的 `## 1. 工作摘要` 章节。
-- 将内容回填至 `timeline.md` 的表格中，确保索引与详情一致。
+1. Review `git log` to identify all commits since the last milestone.
+2. For every modified file, trace its upstream callers and downstream dependencies.
+3. Use `Read` to verify the source definitions of changed functions.
+4. Do not proceed until "Ripple Effects" and "Systemic Impact" can be explained for every change.
 
-## 目录结构
+### Phase 2: Generate Draft
+
+Run `/milestone`. The system will:
+
+- Execute `generate_draft.py` to create a timestamped report file in `.claude/history/reports/` (e.g., `20260130_103000.md`).
+- Update `.claude/history/timeline.md` with a new row.
+
+### Phase 3: Fill Content
+
+The AI populates the report following the schema in `report_schema.json`. Required sections:
+
+| Section | Content |
+| :--- | :--- |
+| 1. Summary | Concise summary of work done (1-3 sentences) |
+| 2. Technical Decisions | Key architectural choices with rationale |
+| 3. Implementation Details | Per-file modification details, data flow role, and ripple effects |
+| 4. Systemic Impact Analysis | Impact on data flow, framework, API, performance, concurrency |
+| 5. Experiments & Debugging | Test results, logs, or root cause analysis |
+| 6. Invariants & PBT Spec | Property-Based Testing invariants |
+| 7. Technical Debt & Future Plan | Remaining tasks and known risks |
+
+Language follows the `REMY_LANG` environment variable (`en` or `zh-CN`).
+
+### Phase 4: Summary Sync
+
+After the report is written, run `/milestone` again (or `python "~/.claude/skills/milestone/sync_timeline.py"`). The system will:
+
+- Read the report's Summary section.
+- Backfill the summary into `timeline.md`.
+- Regenerate `.claude/history/timeline_view.md` according to the current filter configuration.
+
+## Content Standards
+
+1. **Completeness**: Do not summarize or omit technical details to save tokens.
+2. **Negative Knowledge**: Document refuted hypotheses and failed attempts.
+3. **Objective Style**: Formal indicative sentences. No adjectives, adverbs, or metaphors.
+4. **Epistemic Humility**: Do not declare "Fixed" or "Solved" without empirical evidence. Use "Implemented" or "Attempted" for unverified changes.
+
+## Timeline Filter Configuration
+
+The timeline injected into `CLAUDE.md` is sourced from `timeline_view.md`, a filtered view of the full `timeline.md`. Configure via `settings.json` or `settings.local.json`:
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `TIMELINE_INJECT_MODE` | `"all"` | Filter mode |
+| `TIMELINE_INJECT_VALUE` | `""` | Mode parameter (see below) |
+
+| Mode | VALUE Meaning | Example |
+| :--- | :--- | :--- |
+| `all` | Ignored; inject all records | — |
+| `last_n` | Integer; keep latest N entries | `"10"` |
+| `since_date` | `YYYY-MM-DD`; keep entries after this date | `"2026-03-01"` |
+| `within_days` | Integer; keep entries within last N days | `"30"` |
+
+When mode is not `all`, `timeline_view.md` prepends a meta-info line stating the total record count and visible range. The full history is always preserved in `timeline.md`. On invalid `VALUE`, the script falls back to `mode=all` with a stderr warning.
+
+## Directory Structure
 
 ```text
 .claude/history/
-├── timeline.md          # 核心索引表 (Date | ID | Link | Summary)
-└── reports/             # 详细报告存储目录
+├── timeline.md          # Full index table (Date | ID | Link | Summary)
+├── timeline_view.md     # Filtered view (injected into CLAUDE.md)
+└── reports/             # Detailed report storage
     ├── 20260124_xxxx.md
     └── 20260130_xxxx.md
 ```
 
-## 注意事项
+## Notes
 
-- **禁止占位符**: `sync_timeline.py` 会检测并拒绝同步包含 `[AI TODO: ...]` 占位符的报告。
-- **文件幂等**: 多次运行生成脚本不会覆盖已存在的同名文件（基于分钟级时间戳）。
+- **No placeholders**: `sync_timeline.py` detects and rejects reports containing `[AI TODO: ...]` placeholders.
+- **Idempotent**: Running the generation script multiple times does not overwrite existing files (minute-level timestamp deduplication).
+
+## Related Files
+
+| File | Purpose |
+| :--- | :--- |
+| `SKILL.md` | Full protocol definition (loaded by Claude Code) |
+| `report_schema.json` | Report section schema |
+| `report_template_en.md` | English report template |
+| `report_template_zh.md` | Chinese report template |
+| `generate_draft.py` | Draft generation script |
+| `sync_timeline.py` | Timeline synchronization script |

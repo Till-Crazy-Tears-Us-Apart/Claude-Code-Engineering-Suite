@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Claude Code Engineering Suite - Installer
+Remy - Installer
 
 Usage:
     python install.py              # Install (default)
@@ -64,7 +64,7 @@ UI = {
         "verify_hook_missing": "Hook file not found: {path}",
         "verify_manifest_missing": "{name} not found",
         "verify_files_missing": "{count} files missing from manifest",
-        "verify_header": "Claude Code Engineering Suite v{ver} - Installation Verification\n",
+        "verify_header": "Remy v{ver} - Installation Verification\n",
         "verify_python": "  Python: {ver}",
         "verify_target": "  Target directory: {path}",
         "verify_ts": "  tree-sitter: {status}",
@@ -73,7 +73,7 @@ UI = {
         "verify_ts_no": "not installed (optional)",
         "verify_issues": "Found {count} issues:",
         "verify_ok": "Verification passed. All checks OK.",
-        "argparse_desc": "Claude Code Engineering Suite Installer",
+        "argparse_desc": "Remy Installer",
         "argparse_uninstall": "Uninstall the suite",
         "argparse_verify": "Verify installation",
         "argparse_lang": "Language for UI and REMY_LANG setting (default: en)",
@@ -109,7 +109,7 @@ UI = {
         "verify_hook_missing": "hook 文件不存在: {path}",
         "verify_manifest_missing": "{name} 不存在",
         "verify_files_missing": "manifest 中 {count} 个文件缺失",
-        "verify_header": "Claude Code Engineering Suite v{ver} - 安装验证\n",
+        "verify_header": "Remy v{ver} - 安装验证\n",
         "verify_python": "  Python: {ver}",
         "verify_target": "  目标目录: {path}",
         "verify_ts": "  tree-sitter: {status}",
@@ -118,7 +118,7 @@ UI = {
         "verify_ts_no": "未安装（可选）",
         "verify_issues": "发现 {count} 个问题：",
         "verify_ok": "验证通过。所有检查项正常。",
-        "argparse_desc": "Claude Code Engineering Suite 安装工具",
+        "argparse_desc": "Remy 安装工具",
         "argparse_uninstall": "卸载套件",
         "argparse_verify": "验证安装",
         "argparse_lang": "界面语言及 REMY_LANG 配置值（默认: en）",
@@ -351,7 +351,7 @@ def do_install() -> None:
     claude_home = get_claude_home()
     claude_home.mkdir(parents=True, exist_ok=True)
 
-    print(f"Claude Code Engineering Suite v{SUITE_VERSION}")
+    print(f"Remy v{SUITE_VERSION}")
     print(_t("target_dir", path=claude_home) + "\n")
 
     records = []
