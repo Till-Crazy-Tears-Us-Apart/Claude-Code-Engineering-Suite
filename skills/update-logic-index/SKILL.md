@@ -37,7 +37,7 @@ You MUST execute the following steps strictly in order.
 
 ### Step 2: Execute Scanning
 1.  Check if `.claude/logic_tree.md` exists.
-    - If **MISSING**: Output (in `Simplified Chinese/简体中文`): "检测到首次运行。即将执行全量代码库扫描，请耐心等待..."
+    - If **MISSING**: Output a first-run notice in the language configured by `REMY_LANG` (`zh-CN`: "检测到首次运行。即将执行全量代码库扫描，请耐心等待..." / `en`: "First run detected. Full codebase scan starting, please wait...")
 2.  Execute the Python indexer:
     ```bash
     python "~/.claude/skills/update-logic-index/run.py"

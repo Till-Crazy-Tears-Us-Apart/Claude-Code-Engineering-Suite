@@ -43,7 +43,7 @@ DEFAULT_MAX_WORKERS = 5
 DEFAULT_RETRY_LIMIT = 3
 DEFAULT_TIMEOUT = 300
 DEFAULT_MAX_TOKENS = 8192
-DEFAULT_LANG = "Simplified Chinese"
+DEFAULT_LANG = "English"
 MAX_CTX_CHARS = 200000
 
 DEFAULT_AUTO_INJECT = "ALWAYS"
@@ -90,7 +90,8 @@ class LogicIndexer:
             self.timeout = DEFAULT_TIMEOUT
 
         self.filter_small = str(os.environ.get("LOGIC_INDEX_FILTER_SMALL", DEFAULT_FILTER_SMALL)).lower() == "true"
-        self.lang = os.environ.get("LOGIC_INDEX_LANG", DEFAULT_LANG)
+        remy_lang = os.environ.get("REMY_LANG", "en")
+        self.lang = {"zh-CN": "Simplified Chinese", "en": "English"}.get(remy_lang, DEFAULT_LANG)
 
         self.exclusions = []
         self._load_config()

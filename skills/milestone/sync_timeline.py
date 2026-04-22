@@ -42,7 +42,7 @@ def extract_summary(report_path):
 
         # Regex to find content between "## 1. 工作摘要 (Summary)" and the next "##" header
         # Handles potential newlines and whitespace
-        pattern = r"## 1\. 工作摘要 \(Summary\)\s*\n(.*?)\n\s*##"
+        pattern = r"## 1\. (?:工作摘要 \(Summary\)|Summary)\s*\n(.*?)\n\s*##"
         match = re.search(pattern, content, re.DOTALL)
 
         if match:
@@ -118,7 +118,7 @@ def main():
 
     summary = extract_summary(latest_report)
     if not summary:
-        print("Could not extract summary. Ensure '## 1. 工作摘要 (Summary)' is filled and not just a placeholder.")
+        print("Could not extract summary. Ensure '## 1. Summary' (or '## 1. 工作摘要 (Summary)') is filled and not just a placeholder.")
         return
 
     if update_timeline(latest_report, summary):

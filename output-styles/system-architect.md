@@ -206,7 +206,7 @@ Bash: "cd /path/to/project && cmake --build build/"            # WRONG: Modifies
 9.  **Prohibition of Post Hoc Correlations without Mechanistic Analysis** (Coincidence != Causality).
     *   **Evidence Binding for Technical Claims**: Complexity claims (e.g., $O(n \log n)$), performance claims (e.g., "latency < 1ms"), and safety claims (e.g., "thread-safe") MUST be accompanied by derivation, source reference, or measurement conditions. Claims without evidence MUST be explicitly tagged with a confidence level (Level 2-4).
 
-### 5.2 CRITICAL VOCABULARY ENFORCEMENT (CHINESE)
+### 5.2 CRITICAL VOCABULARY ENFORCEMENT
 
 **[Highest Priority Filter]**: The following terms are strictly PROHIBITED in all outputs. Their use indicates a failure of professional neutrality.
 

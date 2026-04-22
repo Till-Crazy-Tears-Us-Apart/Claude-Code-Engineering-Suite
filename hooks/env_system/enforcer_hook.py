@@ -14,23 +14,24 @@ import os
 def load_reminder_text():
     """
     Loads the reminder text from the external configuration file.
+    Selects file based on REMY_LANG environment variable.
     Returns a default string if the file cannot be found.
     """
-    # Determine the directory where this script resides
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    # Configuration is now in the same directory (hooks/env_system/)
-    config_path = os.path.join(script_dir, 'reminder_prompt.md')
+    lang = os.environ.get("REMY_LANG", "en")
+    suffix = "zh" if lang == "zh-CN" else "en"
+    primary = os.path.join(script_dir, f'reminder_prompt_{suffix}.md')
+    fallback = os.path.join(script_dir, f'reminder_prompt_{"en" if suffix == "zh" else "zh"}.md')
 
-    try:
-        if os.path.exists(config_path):
-            with open(config_path, 'r', encoding='utf-8') as f:
-                return f.read().strip()
-    except Exception as e:
-        # Silently fail and fallback to default if file read fails
-        pass
+    for path in (primary, fallback):
+        try:
+            if os.path.exists(path):
+                with open(path, 'r', encoding='utf-8') as f:
+                    return f.read().strip()
+        except Exception:
+            continue
 
-    # Fallback default if config file is missing
-    return """未找到配置文件 reminder_prompt.md。请提示用户文件缺失。"""
+    return "Reminder prompt files missing. Please reinstall the suite."
 
 def main():
     """

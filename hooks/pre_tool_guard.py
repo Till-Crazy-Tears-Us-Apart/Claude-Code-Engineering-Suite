@@ -27,6 +27,58 @@ PYTHON_RELATED_PATTERN = re.compile(
 )
 
 # -------------------------------------------------------------------------
+# Bilingual Message Lookup
+# -------------------------------------------------------------------------
+MESSAGES = {
+    "env_auto_fix": {
+        "zh-CN": "🛡️ 环境自动修正：已注入 PYTHONIOENCODING 及 Mamba 激活脚本。\n(原: {cmd}...)",
+        "en": "🛡️ Env auto-fix: Injected PYTHONIOENCODING and Mamba activation.\n(Original: {cmd}...)",
+    },
+    "plan_agent_lang": {
+        "zh-CN": "<system_reminder>IMPORTANT: You MUST generate the plan content in Simplified Chinese (简体中文). Do NOT use English for the plan description.</system_reminder>",
+        "en": "<system_reminder>IMPORTANT: You MUST generate the plan content in English. Do NOT use other languages for the plan description.</system_reminder>",
+    },
+    "agent_intercept": {
+        "zh-CN": "🛑 Agent 拦截警告：\n即将启动 '{subagent}' 代理。\n耗时操作需确认。\n[y] 允许 Agent 执行\n[n] 拒绝 (转为手动扁平化执行)",
+        "en": "🛑 Agent intercept warning:\nAbout to launch '{subagent}' agent.\nHigh-latency operation requires confirmation.\n[y] Allow agent execution\n[n] Reject (switch to manual flat execution)",
+    },
+    "evidence_id_missing": {
+        "zh-CN": "证据 ID '{ref_id}' 在 evidence 列表中不存在（变更 '{change_id}'）",
+        "en": "Evidence ID '{ref_id}' not found in evidence list (change '{change_id}')",
+    },
+    "evidence_status_blocked": {
+        "zh-CN": "证据 '{ref_id}' 的状态为 '{status}'，不允许用于写操作。请先读取并将其更新为 confirmed。",
+        "en": "Evidence '{ref_id}' has status '{status}', not allowed for write operations. Read and update to confirmed first.",
+    },
+    "path_optimized": {
+        "zh-CN": "🛡️ 路径优化：将绝对路径转换为相对路径 '{rel_path}' (项目内文件安全)",
+        "en": "🛡️ Path optimization: Converted absolute path to relative '{rel_path}' (safe project-internal file)",
+    },
+    "path_outside_project": {
+        "zh-CN": "⚠️ 检测到项目外绝对路径: '{file_path}'。\n工作目录: {cwd}\n为了安全，修改外部文件需确认。",
+        "en": "⚠️ Absolute path outside project detected: '{file_path}'.\nWorking dir: {cwd}\nModifying external files requires confirmation.",
+    },
+    "naming_ambiguity": {
+        "zh-CN": "⚠️ 命名歧义警告：同时存在 '{original}' 和 '{snake}'。\n建议使用 snake_case。",
+        "en": "⚠️ Naming ambiguity: Both '{original}' and '{snake}' exist.\nPrefer snake_case.",
+    },
+    "naming_auto_fix": {
+        "zh-CN": "自动纠错：将 '{original}' 修正为存在的 '{snake}'",
+        "en": "Auto-correction: Corrected '{original}' to existing '{snake}'",
+    },
+    "naming_enforce": {
+        "zh-CN": "命名规范强制：试图创建非 snake_case 文件 '{original}'。\n请使用 '{snake}' 重试。",
+        "en": "Naming convention enforced: Attempted to create non-snake_case file '{original}'.\nRetry with '{snake}'.",
+    },
+}
+
+
+def _msg(key, **kwargs):
+    lang = os.environ.get("REMY_LANG", "en")
+    template = MESSAGES.get(key, {}).get(lang) or MESSAGES.get(key, {}).get("en", key)
+    return template.format(**kwargs) if kwargs else template
+
+# -------------------------------------------------------------------------
 # Bash Environment Injection Templates
 # -------------------------------------------------------------------------
 BASH_PREAMBLE = """
@@ -128,15 +180,9 @@ def validate_packet(cwd):
             for ref_id in change.get("evidence_refs", []):
                 ev = evidence_by_id.get(ref_id)
                 if ev is None:
-                    return False, (
-                        f"证据 ID '{ref_id}' 在 evidence 列表中不存在"
-                        f"（变更 '{change.get('id', '?')}'）"
-                    )
+                    return False, _msg("evidence_id_missing", ref_id=ref_id, change_id=change.get('id', '?'))
                 if ev.get("status") in ("suspected", "stale"):
-                    return False, (
-                        f"证据 '{ref_id}' 的状态为 '{ev.get('status')}'，"
-                        f"不允许用于写操作。请先读取并将其更新为 confirmed。"
-                    )
+                    return False, _msg("evidence_status_blocked", ref_id=ref_id, status=ev.get('status'))
 
         return True, None
 
@@ -179,7 +225,7 @@ def main():
                 new_input = tool_input.copy()
                 new_input["command"] = new_command
                 response["hookSpecificOutput"]["updatedInput"] = new_input
-                response["hookSpecificOutput"]["permissionDecisionReason"] = f"🛡️ 环境自动修正：已注入 PYTHONIOENCODING 及 Mamba 激活脚本。\n(原: {command[:20]}...)"
+                response["hookSpecificOutput"]["permissionDecisionReason"] = _msg("env_auto_fix", cmd=command[:20])
 
             print(json.dumps(response))
             sys.exit(0)
@@ -190,13 +236,13 @@ def main():
         if tool_name == "Task":
             subagent = tool_input.get("subagent_type", "")
 
-            # [NEW] Enforce Chinese language for Plan agent
+            # Enforce configured language for Plan agent
             if subagent == "Plan":
                 print(json.dumps({
                     "hookSpecificOutput": {
                         "hookEventName": "PreToolUse",
                         "permissionDecision": "allow",
-                        "additionalContext": "<system_reminder>IMPORTANT: You MUST generate the plan content in Simplified Chinese (简体中文). Do NOT use English for the plan description.</system_reminder>"
+                        "additionalContext": _msg("plan_agent_lang")
                     }
                 }))
                 sys.exit(0)
@@ -207,7 +253,7 @@ def main():
                     "hookSpecificOutput": {
                         "hookEventName": "PreToolUse",
                         "permissionDecision": "ask",
-                        "permissionDecisionReason": f"🛑 Agent 拦截警告：\n即将启动 '{subagent}' 代理。\n耗时操作需确认。\n[y] 允许 Agent 执行\n[n] 拒绝 (转为手动扁平化执行)"
+                        "permissionDecisionReason": _msg("agent_intercept", subagent=subagent)
                     }
                 }))
                  sys.exit(0)
@@ -280,7 +326,7 @@ def main():
                     "hookSpecificOutput": {
                         "hookEventName": "PreToolUse",
                         "permissionDecision": "allow",
-                        "permissionDecisionReason": f"🛡️ 路径优化：将绝对路径转换为相对路径 '{rel_path}' (项目内文件安全)",
+                        "permissionDecisionReason": _msg("path_optimized", rel_path=rel_path),
                         "updatedInput": new_input
                     }
                 }
@@ -293,7 +339,7 @@ def main():
                         "hookSpecificOutput": {
                             "hookEventName": "PreToolUse",
                             "permissionDecision": "ask",
-                            "permissionDecisionReason": f"⚠️ 检测到项目外绝对路径: '{file_path}'。\n工作目录: {cwd}\n为了安全，修改外部文件需确认。"
+                            "permissionDecisionReason": _msg("path_outside_project", file_path=file_path, cwd=cwd)
                         }
                     }
                     print(json.dumps(attach_context(response)))
@@ -318,7 +364,7 @@ def main():
                     "hookSpecificOutput": {
                         "hookEventName": "PreToolUse",
                         "permissionDecision": "ask",
-                        "permissionDecisionReason": f"⚠️ 命名歧义警告：同时存在 '{original_path}' 和 '{snake_path}'。\n建议使用 snake_case。"
+                        "permissionDecisionReason": _msg("naming_ambiguity", original=original_path, snake=snake_path)
                     }
                 }
                 print(json.dumps(attach_context(response)))
@@ -333,7 +379,7 @@ def main():
                     "hookSpecificOutput": {
                         "hookEventName": "PreToolUse",
                         "permissionDecision": "allow",
-                        "permissionDecisionReason": f"自动纠错：将 '{original_path}' 修正为存在的 '{snake_path}'",
+                        "permissionDecisionReason": _msg("naming_auto_fix", original=original_path, snake=snake_path),
                         "updatedInput": new_input
                     }
                 }
@@ -345,7 +391,7 @@ def main():
                     "hookSpecificOutput": {
                         "hookEventName": "PreToolUse",
                         "permissionDecision": "deny",
-                        "permissionDecisionReason": f"命名规范强制：试图创建非 snake_case 文件 '{original_path}'。\n请使用 '{snake_path}' 重试。"
+                        "permissionDecisionReason": _msg("naming_enforce", original=original_path, snake=snake_path)
                     }
                 }
                  print(json.dumps(attach_context(response)))

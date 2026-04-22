@@ -31,7 +31,7 @@
 | **开发语言** | Python 3.7+ | 运行 Hooks 脚本 |
 | **运行时环境** | Mamba / Conda | 自动注入 Shell 环境 |
 | **命令行工具** | gh (GitHub CLI) | 仓库审计 (repo-audit) 依赖 |
-| **交互语言** | 简体中文 | 协议头与输出强制中文 |
+| **交互语言** | 可配置 (`REMY_LANG`) | 协议头与输出语言由 `REMY_LANG` 环境变量控制（`en` / `zh-CN`） |
 | **字符编码** | UTF-8 | 强制标准输入输出编码 |
 | **Shell 语法** | POSIX Bash | 限制非标准语法使用 |
 | **命名规范** | snake_case | 限制文件名格式 |
@@ -168,7 +168,7 @@
 .
 ├── install.py                      # 安装脚本 (部署、卸载、验证)
 ├── CLAUDE.md                       # 系统入口，定义核心 Persona 和静态协议
-├── language.md                     # 语言配置 (简体中文)
+├── language.md                     # 语言指令（安装时及 SessionStart 时动态生成）
 ├── style.md                        # 统一协议层 (定义 "Can/Cannot" 边界与 Agent 限制)
 ├── tools_ref.md                    # 工具参考 (技能与钩子索引)
 ├── settings.example.json           # 配置文件模板 (含 Hooks 配置)
@@ -192,7 +192,8 @@
     ├── pre_tool_guard.py           # 工具前置拦截 (路径、命名、环境)
     ├── env_system/                 # 约束增强系统
     │   ├── enforcer_hook.py        # 协议注入 (UserPromptSubmit)
-    │   └── reminder_prompt.md      # 约束提示词配置
+    │   ├── reminder_prompt_en.md   # 约束提示词 (英文)
+    │   └── reminder_prompt_zh.md   # 约束提示词 (中文)
     └── tree_system/                # 项目树自动化
         ├── generate_smart_tree.py  # 核心生成逻辑
         └── lifecycle_hook.py       # 生命周期集成
@@ -205,13 +206,15 @@
 ```bash
 git clone https://github.com/Till-Crazy-Tears-Us-Apart/Remy-CC.git
 cd Remy-CC
-python install.py
+python install.py                # 默认：英文
+python install.py --lang zh-CN   # 简体中文
 ```
 
 安装脚本执行以下操作：
 - 将 `hooks/`、`skills/`、`output-styles/` 及配置文件复制到 `~/.claude/`
 - 将 `settings.example.json` 中的 hooks、permissions、env 合并到 `~/.claude/settings.json`（不覆盖已有值）
 - 自动将 hook 路径展开为当前机器的绝对路径
+- 根据 `--lang` 参数设置 `settings.json` 中的 `REMY_LANG` 值并生成 `language.md`（默认：`en`）
 - 检测 tree-sitter 是否已安装，未安装时询问是否安装（C/C++/TypeScript 高精度解析，可选）
 
 ### 2. 验证

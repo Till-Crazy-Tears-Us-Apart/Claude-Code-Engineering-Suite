@@ -32,14 +32,14 @@ Before generating any files, you MUST perform a deep audit of the work done.
 1.  **Generate Draft**: Use `python "~/.claude/skills/milestone/generate_draft.py"` to create a draft file and update the timeline.
 2.  **Fill Content**: Immediately read the generated draft and populate it using the `Write` tool.
     *   **Data Source**: Use the knowledge gathered in Phase 1.
-    *   **Language Mandate**: All content MUST be in **Simplified Chinese (简体中文)**.
+    *   **Language Mandate**: All content MUST follow the `REMY_LANG` environment variable (`zh-CN` → Chinese, `en` → English).
 3.  **Validation**: Verify the file is saved and the content matches the schema.
 
 ### Phase 3: Finalization (Summary Sync)
 After the report is written and verified, you MUST synchronize the summary back to the timeline index.
 
 1.  **Sync**: Run `python "~/.claude/skills/milestone/sync_timeline.py"`.
-2.  **Verify**: Check that `.claude/history/timeline.md` now contains the meaningful Chinese summary from your report. The script also automatically regenerates `.claude/history/timeline_view.md` according to the current `TIMELINE_INJECT_MODE` configuration.
+2.  **Verify**: Check that `.claude/history/timeline.md` now contains the meaningful summary from your report. The script also automatically regenerates `.claude/history/timeline_view.md` according to the current `TIMELINE_INJECT_MODE` configuration.
 
 ## Content Standards (Strict)
 You MUST adhere to the following 4 rules when writing the report:
@@ -56,7 +56,7 @@ A milestone consists of two parts:
 
 ## Report Schema (Strict Compliance)
 You must follow the schema defined in `~/.claude/skills/milestone/report_schema.json`.
-The generator script handles the skeleton; your job is to populate the content in **Chinese**.
+The generator script handles the skeleton; your job is to populate the content in the language configured by `REMY_LANG`.
 
 ## Timeline Filter Configuration
 

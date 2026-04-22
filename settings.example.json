@@ -13,7 +13,7 @@
     "TIMELINE_AUTO_INJECT": "ALWAYS",
     "LOGIC_INDEX_AUTO_INJECT": "ALWAYS",
     "LOGIC_INDEX_FILTER_SMALL": "false",
-    "LOGIC_INDEX_LANG": "Simplified Chinese",
+    "REMY_LANG": "en",
     "REPO_AUDIT_ROOT": "~/claude_audit",
     "TIMELINE_INJECT_MODE": "all",
     "TIMELINE_INJECT_VALUE": "",

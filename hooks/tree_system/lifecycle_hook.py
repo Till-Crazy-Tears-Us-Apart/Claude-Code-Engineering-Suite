@@ -15,6 +15,22 @@ import subprocess
 
 GENERATOR_SCRIPT = "generate_smart_tree.py"
 
+LANGUAGE_DIRECTIVES = {
+    "zh-CN": "Always respond in Chinese-simplified",
+    "en": "Always respond in English",
+}
+
+
+def generate_language_md(cwd):
+    lang = os.environ.get("REMY_LANG", "en")
+    directive = LANGUAGE_DIRECTIVES.get(lang, LANGUAGE_DIRECTIVES["en"])
+    lang_path = os.path.join(cwd, "language.md")
+    try:
+        with open(lang_path, 'w', encoding='utf-8') as f:
+            f.write(directive + "\n")
+    except Exception as e:
+        print(f"[LifecycleHook] Failed to generate language.md: {e}", file=sys.stderr)
+
 def update_tree(cwd):
     """
     Executes the tree generation script.
@@ -61,12 +77,19 @@ def main():
         # Trigger update on specific lifecycle events
         if event_name == "SessionStart":
             update_tree(cwd)
+            generate_language_md(cwd)
 
-            # Advice user to run /update-tree if context is stale
-            advice = (
-                "\n💡 提示：如果之前从未使用过 /update-tree 或刚安装 hooks，建议手动执行 /update-tree 以刷新项目结构上下文。\n"
-                "🛡️ 建议：请将 .claude/ 加入 .gitignore 以避免提交自动生成的元数据；执行/compact 前使用 /milestone 以固化历史记录。"
-            )
+            lang = os.environ.get("REMY_LANG", "en")
+            if lang == "zh-CN":
+                advice = (
+                    "\n💡 提示：如果之前从未使用过 /update-tree 或刚安装 hooks，建议手动执行 /update-tree 以刷新项目结构上下文。\n"
+                    "🛡️ 建议：请将 .claude/ 加入 .gitignore 以避免提交自动生成的元数据；执行/compact 前使用 /milestone 以固化历史记录。"
+                )
+            else:
+                advice = (
+                    "\n💡 Tip: If you have never used /update-tree or just installed hooks, run /update-tree manually to refresh the project structure context.\n"
+                    "🛡️ Recommendation: Add .claude/ to .gitignore to avoid committing auto-generated metadata; use /milestone before /compact to persist history."
+                )
 
             print(json.dumps({
                 "systemMessage": advice

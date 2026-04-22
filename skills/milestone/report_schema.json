@@ -5,11 +5,11 @@
     "sections": [
       {
         "id": "1. Summary",
-        "content": "String. Concise summary of work done (1-3 sentences). MUST be in Simplified Chinese."
+        "content": "String. Concise summary of work done (1-3 sentences). MUST follow the REMY_LANG setting."
       },
       {
         "id": "2. Technical Decisions & Ambiguity Resolution",
-        "content": "List. Key architectural choices. Format: Decision | Reason. MUST be in Simplified Chinese."
+        "content": "List. Key architectural choices. Format: Decision | Reason. MUST follow the REMY_LANG setting."
       },
       {
         "id": "3. Implementation Details",
@@ -21,24 +21,24 @@
           "Ripple Effects": "Upstream dependencies and downstream consumers affected.",
           "Code Logic": "Explanation of specific logic changes (Line X-Y)."
         },
-        "language": "MUST be in Simplified Chinese."
+        "language": "MUST follow the REMY_LANG setting."
       },
       {
         "id": "4. Systemic Impact Analysis",
         "content": "Analyze impact on: Data Flow, Functional Hierarchy, Framework Impact, API Consistency, Performance (Time/Space), Concurrency/Locks, Hardcoding/Config.",
-        "language": "MUST be in Simplified Chinese."
+        "language": "MUST follow the REMY_LANG setting."
       },
       {
         "id": "5. Experiments & Debugging",
-        "content": "String/List. Test results, logs, or RCA. MUST be in Simplified Chinese."
+        "content": "String/List. Test results, logs, or RCA. MUST follow the REMY_LANG setting."
       },
       {
         "id": "6. Invariants & PBT Spec",
-        "content": "List. Property-Based Testing invariants. MUST be in Simplified Chinese."
+        "content": "List. Property-Based Testing invariants. MUST follow the REMY_LANG setting."
       },
       {
         "id": "7. Technical Debt & Future Plan",
-        "content": "List. Remaining tasks and known risks. MUST be in Simplified Chinese."
+        "content": "List. Remaining tasks and known risks. MUST follow the REMY_LANG setting."
       }
     ]
   },

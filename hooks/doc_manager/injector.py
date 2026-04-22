@@ -103,6 +103,7 @@ def generate_timeline_view(cwd):
     falls back to mode='all' and prints a warning to stderr.
     """
     mode, value = _load_timeline_filter_config()
+    lang = os.environ.get("REMY_LANG", "en")
 
     timeline_path = os.path.join(cwd, TIMELINE_FILE)
     view_path = os.path.join(cwd, TIMELINE_VIEW_FILE)
@@ -129,6 +130,14 @@ def generate_timeline_view(cwd):
     total = len(data_rows)
     meta_line = None
 
+    def _meta(msg_zh, msg_en):
+        return msg_zh if lang == "zh-CN" else msg_en
+
+    full_hist = _meta(
+        "完整历史见 `.claude/history/timeline.md`。",
+        "Full history in `.claude/history/timeline.md`."
+    )
+
     if mode == "all":
         filtered = data_rows
     elif mode == "last_n":
@@ -143,9 +152,9 @@ def generate_timeline_view(cwd):
             filtered = data_rows
         else:
             filtered = data_rows[:n]
-            meta_line = (
-                f"> 注：共 {total} 条记录，当前显示最新 {len(filtered)} 条。"
-                "完整历史见 `.claude/history/timeline.md`。\n"
+            meta_line = _meta(
+                f"> 注：共 {total} 条记录，当前显示最新 {len(filtered)} 条。{full_hist}\n",
+                f"> Note: {total} total records, showing latest {len(filtered)}. {full_hist}\n",
             )
     elif mode == "since_date":
         try:
@@ -159,9 +168,9 @@ def generate_timeline_view(cwd):
             filtered = data_rows
         else:
             filtered = [r for r in data_rows if _row_passes_date_filter(r, cutoff)]
-            meta_line = (
-                f"> 注：共 {total} 条记录，当前显示 {value} 之后的 {len(filtered)} 条。"
-                "完整历史见 `.claude/history/timeline.md`。\n"
+            meta_line = _meta(
+                f"> 注：共 {total} 条记录，当前显示 {value} 之后的 {len(filtered)} 条。{full_hist}\n",
+                f"> Note: {total} total records, showing {len(filtered)} since {value}. {full_hist}\n",
             )
     elif mode == "within_days":
         try:
@@ -176,9 +185,9 @@ def generate_timeline_view(cwd):
         else:
             cutoff = datetime.now().date() - timedelta(days=n)
             filtered = [r for r in data_rows if _row_passes_date_filter(r, cutoff)]
-            meta_line = (
-                f"> 注：共 {total} 条记录，当前显示最近 {n} 天内的 {len(filtered)} 条"
-                f"（{cutoff} 至今）。完整历史见 `.claude/history/timeline.md`。\n"
+            meta_line = _meta(
+                f"> 注：共 {total} 条记录，当前显示最近 {n} 天内的 {len(filtered)} 条（{cutoff} 至今）。{full_hist}\n",
+                f"> Note: {total} total records, showing {len(filtered)} within last {n} days (since {cutoff}). {full_hist}\n",
             )
     else:
         print(

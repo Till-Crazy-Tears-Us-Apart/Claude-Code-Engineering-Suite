@@ -31,7 +31,7 @@ You MUST execute the following loop until NO ambiguities remain:
     *   **YES**: Continue to next sub-step.
 3.  **Ask**: Use `AskUserQuestion` to resolve *current layer* ambiguities.
     *   **Multi-Question Batching**: Present all currently visible ambiguities.
-    *   **Language**: Simplified Chinese (简体中文).
+    *   **Language**: Follow the `REMY_LANG` environment variable (`zh-CN` → Chinese, `en` → English).
     *   **Format**: Short header, reasonable options, recommended option marked.
 4.  **Saturate (Again) - ACTION REQUIRED**:
     *   **Trigger**: Immediately upon receiving the user's choice.

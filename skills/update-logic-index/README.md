@@ -91,7 +91,7 @@ pip install tree-sitter tree-sitter-c tree-sitter-cpp tree-sitter-typescript
 | `OPENAI_MAX_TOKENS` | `8192` | 响应 Token 上限 |
 | `LOGIC_INDEX_AUTO_INJECT` | `ALWAYS` | `ALWAYS`/`ASK`/`NEVER` |
 | `LOGIC_INDEX_FILTER_SMALL` | `false` | 是否跳过微型函数 |
-| `LOGIC_INDEX_LANG` | `Simplified Chinese` | 摘要输出语言 |
+| `REMY_LANG` | `en` | 摘要输出语言（`en` / `zh-CN`） |
 
 ### 2. 排除规则 (`.claude/logic_index_config`)
 

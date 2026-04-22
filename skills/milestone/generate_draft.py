@@ -19,13 +19,20 @@ REPORTS_DIR = os.path.join(HISTORY_DIR, "reports")
 TIMELINE_FILE = os.path.join(HISTORY_DIR, "timeline.md")
 CLAUDE_MD = "CLAUDE.md"
 
+TIMELINE_PREAMBLE = {
+    "zh-CN": "项目历史里程碑索引。详细内容请参考关联报告。",
+    "en": "Project milestone history index. See linked reports for details.",
+}
+
 def ensure_structure():
     """Ensures the history directory structure exists."""
     os.makedirs(REPORTS_DIR, exist_ok=True)
     if not os.path.exists(TIMELINE_FILE):
         os.makedirs(os.path.dirname(TIMELINE_FILE), exist_ok=True)
+        lang = os.environ.get("REMY_LANG", "en")
+        preamble = TIMELINE_PREAMBLE.get(lang, TIMELINE_PREAMBLE["en"])
         with open(TIMELINE_FILE, "w", encoding="utf-8") as f:
-            f.write("# Project Timeline\n\n项目历史里程碑索引。详细内容请参考关联报告。\n\n---\n")
+            f.write(f"# Project Timeline\n\n{preamble}\n\n---\n")
 
 def get_recent_summary():
     """Captures a brief summary of staged/recent changes."""
@@ -63,7 +70,11 @@ def main():
     report_path = os.path.join(REPORTS_DIR, report_filename)
 
     # 1. Generate Report Template
-    template_path = os.path.join(os.path.dirname(__file__), "report_template.md")
+    lang = os.environ.get("REMY_LANG", "en")
+    suffix = "zh" if lang == "zh-CN" else "en"
+    template_path = os.path.join(os.path.dirname(__file__), f"report_template_{suffix}.md")
+    if not os.path.exists(template_path):
+        template_path = os.path.join(os.path.dirname(__file__), "report_template_en.md")
     if os.path.exists(template_path):
         with open(template_path, "r", encoding="utf-8") as f:
             template_content = f.read()
