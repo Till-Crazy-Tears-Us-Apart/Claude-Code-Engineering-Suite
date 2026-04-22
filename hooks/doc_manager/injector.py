@@ -32,10 +32,16 @@ REGISTRY = {
     "logic_tree": ".claude/logic_tree.md"
 }
 
+TAG_POLICY_MAP = {
+    "project_structure": "PROJECT_TREE_AUTO_INJECT",
+    "history_timeline": "TIMELINE_AUTO_INJECT",
+    "logic_tree": "LOGIC_INDEX_AUTO_INJECT",
+}
 
-def load_policy_from_settings(cwd):
-    """Loads injection policy from settings.local.json or environment."""
-    env_policy = os.environ.get("LOGIC_INDEX_AUTO_INJECT")
+
+def load_policy(cwd, env_var_name):
+    """Loads injection policy for a given env var from environment or settings.local.json."""
+    env_policy = os.environ.get(env_var_name)
     if env_policy:
         return env_policy
 
@@ -44,11 +50,13 @@ def load_policy_from_settings(cwd):
         try:
             with open(settings_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                return data.get("env", {}).get("LOGIC_INDEX_AUTO_INJECT")
+                value = data.get("env", {}).get(env_var_name)
+                if value is not None:
+                    return value
         except Exception:
             pass
 
-    return "ASK"
+    return "ALWAYS"
 
 
 def _load_timeline_filter_config():
@@ -201,15 +209,14 @@ def inject_all(cwd):
 
     claude_md_path = os.path.join(cwd, CLAUDE_MD)
 
-    logic_policy = load_policy_from_settings(cwd)
-
     active_registry = REGISTRY.copy()
     removal_list = []
 
-    if logic_policy != "ALWAYS":
-        if "logic_tree" in active_registry:
-            del active_registry["logic_tree"]
-            removal_list.append("logic_tree")
+    for tag, env_var in TAG_POLICY_MAP.items():
+        policy = load_policy(cwd, env_var)
+        if policy != "ALWAYS" and tag in active_registry:
+            del active_registry[tag]
+            removal_list.append(tag)
 
     if not os.path.exists(claude_md_path):
         with open(claude_md_path, 'w', encoding='utf-8') as f:
@@ -248,9 +255,11 @@ def inject_all(cwd):
 
         with open(claude_md_path, 'w', encoding='utf-8') as f:
             f.write(new_content)
-        print(f"[Injector] Updated {CLAUDE_MD} (Policy: {logic_policy})")
+        policy_summary = ", ".join(f"{t}={load_policy(cwd, e)}" for t, e in TAG_POLICY_MAP.items())
+        print(f"[Injector] Updated {CLAUDE_MD} ({policy_summary})")
     else:
-        print(f"[Injector] No changes needed for {CLAUDE_MD} (Policy: {logic_policy})")
+        policy_summary = ", ".join(f"{t}={load_policy(cwd, e)}" for t, e in TAG_POLICY_MAP.items())
+        print(f"[Injector] No changes needed for {CLAUDE_MD} ({policy_summary})")
 
 
 def main():
